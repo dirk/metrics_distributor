@@ -1,0 +1,9 @@
+[package]
+name = "metrics_distributor"
+version = "0.1.0"
+authors = ["Dirk Gadsden <dirk@esherido.com>"]
+description = "Ingest logs and forward aggregated data to APIs/services."
+
+[dependencies]
+hyper = "0.7.2"
+regex = "0.1.51"
