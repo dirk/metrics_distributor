@@ -7,3 +7,4 @@ description = "Ingest logs and forward aggregated data to APIs/services."
 [dependencies]
 hyper = "0.7.2"
 regex = "0.1.51"
+lazy_static = "0.1.15"
