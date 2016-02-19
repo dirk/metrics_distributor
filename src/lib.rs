@@ -1,15 +1,16 @@
 #[macro_use]
 extern crate lazy_static;
 
+extern crate hyper;
 extern crate iron;
 extern crate regex;
 
-mod distributor;
-mod metrics;
-mod reader;
-mod server;
+pub mod distributor;
+pub mod metrics;
+pub mod reader;
+pub mod server;
 
-pub use distributor::Distributor;
+pub use distributor::*;
 
 #[cfg(test)]
 mod test {

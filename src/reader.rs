@@ -1,13 +1,13 @@
 use regex::{Regex};
 use std::str::{FromStr};
 
-use super::Distributor;
+use super::metrics::*;
 
-pub trait LogLineReader {
-    fn read(&self, &mut Distributor, &str);
+pub trait LogLineReader: Send + Sync {
+    fn read(&self, &str) -> Vec<Metric>;
 }
 
-struct StandardLogLineReader;
+pub struct StandardLogLineReader;
 
 lazy_static! {
     static ref LOG_MEASURE_REGEX: Regex =
@@ -18,14 +18,15 @@ lazy_static! {
 }
 
 impl LogLineReader for StandardLogLineReader {
-    fn read(&self, dist: &mut Distributor, line: &str) {
+    fn read(&self, line: &str) -> Vec<Metric> {
+        let mut metrics = vec![];
 
         // Look for measures
         for cap in LOG_MEASURE_REGEX.captures_iter(line) {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
-                dist.record_measure(name.to_owned(), value)
+                metrics.push(Measure(name.to_owned(), value))
             }
         }
 
@@ -34,9 +35,10 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = u64::from_str(cap.at(2).unwrap()) {
-                dist.record_count(name.to_owned(), value)
+                metrics.push(Count(name.to_owned(), value))
             }
         }
 
+        metrics
     } // fn read
 }

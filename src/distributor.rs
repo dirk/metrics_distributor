@@ -1,51 +1,63 @@
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use metrics::*;
 
-pub struct Distributor {
-    counts: HashMap<String, Count>,
-    measures: HashMap<String, Measure>,
+/// Internal storage of distributor data.
+pub struct BaseDistributor {
+    counts: HashMap<String, u64>,
+    measures: HashMap<String, Vec<f64>>,
 
     // TODO: Implement samples
     // samples: HashMap<String, Sample>,
 
-    /// How often it will collect its metrics before reporting the accumulated
-    /// value of the metric.
-    default_resolution: Seconds,
+    /// For how long it will collect its metrics before reporting the
+    /// accumulated value of the metric.
+    flush_interval: Seconds,
 }
 
-impl Distributor {
-    pub fn new() -> Distributor {
-        Distributor {
+impl BaseDistributor {
+    pub fn new() -> BaseDistributor {
+        BaseDistributor {
             counts: HashMap::new(),
             measures: HashMap::new(),
-            default_resolution: 10,
+            flush_interval: 10,
         }
     }
 
-    pub fn record_measure(&mut self, name: String, value: f64) {
-        let resolution = self.default_resolution;
-
-        let measure = self.measures.entry(name.clone()).or_insert_with(|| {
-            Measure {
-                metric: Metric::new(name, resolution),
-                values: vec![],
+    fn record(&mut self, metrics: Vec<Metric>) {
+        for metric in metrics {
+            match metric {
+                Count(name, value) => {
+                    let count = self.counts.entry(name).or_insert(0);
+                    *count += value;
+                },
+                Measure(name, value) => {
+                    let values = self.measures.entry(name).or_insert(Vec::new());
+                    values.push(value);
+                },
             }
-        });
+        }
+    } // fn record
+}
 
-        measure.values.push(value)
+/// Thread-safe interface to the distributor. In most cases this is what you
+/// want to use.
+#[derive(Clone)]
+pub struct SharedDistributor {
+    shared: Arc<Mutex<BaseDistributor>>,
+}
+
+impl SharedDistributor {
+    pub fn new() -> SharedDistributor {
+        SharedDistributor {
+            shared: Arc::new(Mutex::new(BaseDistributor::new())),
+        }
     }
 
-    pub fn record_count(&mut self, name: String, value: u64) {
-        let resolution = self.default_resolution;
+    pub fn record(&self, metrics: Vec<Metric>) {
+        let mut distributor = self.shared.lock().unwrap();
 
-        let entry = self.counts.entry(name.clone()).or_insert_with(|| {
-            Count {
-                metric: Metric::new(name, resolution),
-                value: 0,
-            }
-        });
-
-        entry.value = value
+        distributor.record(metrics)
     }
 }
