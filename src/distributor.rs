@@ -19,7 +19,6 @@ impl Distributor {
         Distributor {
             counts: HashMap::new(),
             measures: HashMap::new(),
-            samples: HashMap::new(),
             default_resolution: 10,
         }
     }

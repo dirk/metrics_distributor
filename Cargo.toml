@@ -5,6 +5,7 @@ authors = ["Dirk Gadsden <dirk@esherido.com>"]
 description = "Ingest logs and forward aggregated data to APIs/services."
 
 [dependencies]
-hyper = "0.7.2"
+iron = "0.2.6"
+router = "0.1.0"
 regex = "0.1.51"
 lazy_static = "0.1.15"

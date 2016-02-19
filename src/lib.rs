@@ -1,11 +1,13 @@
 #[macro_use]
 extern crate lazy_static;
 
+extern crate iron;
 extern crate regex;
 
 mod distributor;
-mod reader;
 mod metrics;
+mod reader;
+mod server;
 
 pub use distributor::Distributor;
 

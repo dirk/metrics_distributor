@@ -3,7 +3,7 @@ use std::str::{FromStr};
 
 use super::Distributor;
 
-trait LogLineReader {
+pub trait LogLineReader {
     fn read(&self, &mut Distributor, &str);
 }
 
