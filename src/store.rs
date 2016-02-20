@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 
 use metrics::*;
 
-/// Internal storage of distributor data.
-pub struct BaseDistributor {
+/// Internal storage of store data.
+pub struct BaseStore {
     counts: HashMap<String, u64>,
     measures: HashMap<String, Vec<f64>>,
 
@@ -16,9 +16,9 @@ pub struct BaseDistributor {
     flush_interval: Seconds,
 }
 
-impl BaseDistributor {
-    pub fn new() -> BaseDistributor {
-        BaseDistributor {
+impl BaseStore {
+    pub fn new() -> BaseStore {
+        BaseStore {
             counts: HashMap::new(),
             measures: HashMap::new(),
             flush_interval: 10,
@@ -41,23 +41,23 @@ impl BaseDistributor {
     } // fn record
 }
 
-/// Thread-safe interface to the distributor. In most cases this is what you
+/// Thread-safe interface to the store. In most cases this is what you
 /// want to use.
 #[derive(Clone)]
-pub struct SharedDistributor {
-    shared: Arc<Mutex<BaseDistributor>>,
+pub struct SharedStore {
+    shared: Arc<Mutex<BaseStore>>,
 }
 
-impl SharedDistributor {
-    pub fn new() -> SharedDistributor {
-        SharedDistributor {
-            shared: Arc::new(Mutex::new(BaseDistributor::new())),
+impl SharedStore {
+    pub fn new() -> SharedStore {
+        SharedStore {
+            shared: Arc::new(Mutex::new(BaseStore::new())),
         }
     }
 
     pub fn record(&self, metrics: Vec<Metric>) {
-        let mut distributor = self.shared.lock().unwrap();
+        let mut Store = self.shared.lock().unwrap();
 
-        distributor.record(metrics)
+        Store.record(metrics)
     }
 }

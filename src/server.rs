@@ -3,19 +3,19 @@ use iron::middleware::Handler;
 use iron::status::Status;
 use std::io::Read;
 
-use super::{SharedDistributor};
+use super::{SharedStore};
 use super::metrics::Metric;
 use super::reader::LogLineReader;
 
 pub struct LogDrainHandler {
-    distributor: SharedDistributor,
+    store: SharedStore,
     readers: Vec<Box<LogLineReader>>,
 }
 
 impl LogDrainHandler {
-    pub fn new(distributor: SharedDistributor, readers: Vec<Box<LogLineReader>>) -> LogDrainHandler {
+    pub fn new(store: SharedStore, readers: Vec<Box<LogLineReader>>) -> LogDrainHandler {
         LogDrainHandler {
-            distributor: distributor,
+            store: store,
             readers: readers,
         }
     }
@@ -41,7 +41,7 @@ impl Handler for LogDrainHandler {
             }
         }
 
-        self.distributor.record(metrics);
+        self.store.record(metrics);
 
         Ok(Response::with((Status::Created)))
     }

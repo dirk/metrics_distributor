@@ -5,12 +5,12 @@ extern crate hyper;
 extern crate iron;
 extern crate regex;
 
-pub mod distributor;
+pub mod store;
 pub mod metrics;
 pub mod reader;
 pub mod server;
 
-pub use distributor::*;
+pub use store::*;
 
 #[cfg(test)]
 mod test {

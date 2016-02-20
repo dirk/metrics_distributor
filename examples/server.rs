@@ -2,16 +2,16 @@ extern crate metrics_distributor;
 extern crate iron;
 extern crate router;
 
-use metrics_distributor::SharedDistributor;
+use metrics_distributor::SharedStore;
 use metrics_distributor::server::LogDrainHandler;
 use metrics_distributor::reader::StandardLogLineReader;
 use iron::prelude::*;
 use router::Router;
 
 fn main() {
-    let distributor = SharedDistributor::new();
+    let store = SharedStore::new();
 
-    let log_drain = LogDrainHandler::new(distributor, vec![
+    let log_drain = LogDrainHandler::new(store, vec![
         Box::new(StandardLogLineReader)
     ]);
 
