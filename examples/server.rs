@@ -3,7 +3,7 @@ extern crate iron;
 extern crate router;
 
 use metrics_distributor::SharedStore;
-use metrics_distributor::server::LogDrainHandler;
+use metrics_distributor::http::LogDrainHandler;
 use metrics_distributor::reader::StandardLogLineReader;
 use iron::prelude::*;
 use router::Router;

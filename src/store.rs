@@ -56,8 +56,8 @@ impl SharedStore {
     }
 
     pub fn record(&self, metrics: Vec<Metric>) {
-        let mut Store = self.shared.lock().unwrap();
+        let mut store = self.shared.lock().unwrap();
 
-        Store.record(metrics)
+        store.record(metrics)
     }
 }
