@@ -10,6 +10,7 @@ extern crate regex;
 pub mod collectors;
 pub mod store;
 pub mod metrics;
+pub mod parsers;
 pub mod reader;
 
 pub use store::*;
