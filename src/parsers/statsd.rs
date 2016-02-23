@@ -1,4 +1,5 @@
 use std::char;
+use std::num::ParseIntError;
 use std::str::{self, FromStr};
 
 use nom::{
@@ -13,22 +14,47 @@ use nom::{
 #[derive(Debug, PartialEq)]
 pub enum ParsedMetric {
     Gauge(String, u64),
+    Counter(String, u64),
 }
 
 pub type ParseResult<'a> = IResult<&'a [u8], ParsedMetric>;
 
-fn bytes_to_u64(i: &[u8]) -> u64 {
+fn bytes_to_u64(i: &[u8]) -> Result<u64, ParseIntError> {
     let s = str::from_utf8(i).unwrap();
 
-    u64::from_str(s).unwrap()
+    u64::from_str(s)
 }
 
 pub fn parse_gauge(i: &[u8]) -> ParseResult {
     chain!(i,
         name: parse_metric_name ~ tag!(":")  ~
-        value: digit            ~ tag!("|g") ,
+        value: parse_value      ~ tag!("|g") ,
 
-        ||{ ParsedMetric::Gauge(name, bytes_to_u64(value)) }
+        ||{ ParsedMetric::Gauge(name, value) }
+    )
+}
+
+pub fn parse_counter(i: &[u8]) -> ParseResult {
+    chain!(i,
+        name: parse_metric_name ~ tag!(":")  ~
+        value: parse_value      ~ tag!("|c") ~
+        sample_rate: opt!(complete!(parse_sample_rate)) ,
+
+        ||{ ParsedMetric::Counter(name, value) }
+    )
+}
+
+pub fn parse_value(i: &[u8]) -> IResult<&[u8], u64> {
+    map_res!(i,
+        digit,
+        |value| { bytes_to_u64(value) }
+    )
+}
+
+pub fn parse_sample_rate(i: &[u8]) -> IResult<&[u8], u64> {
+    preceded!(i,
+        tag!("|@"),
+        map_res!(digit, |rate| { bytes_to_u64(rate) })
     )
 }
 
@@ -61,8 +87,24 @@ mod tests {
     #[test]
     fn it_parses_gauge() {
         assert_eq!(
-            parse_gauge(&b"foo.bar_baz:1|g"[..]),
-            complete(ParsedMetric::Gauge("foo.bar_baz".to_owned(), 1))
+            parse_gauge(&b"foo.bar_baz:12|g"[..]),
+            complete(ParsedMetric::Gauge("foo.bar_baz".to_owned(), 12))
+        )
+    }
+
+    #[test]
+    fn it_parses_counter() {
+        assert_eq!(
+            parse_counter(&b"foo.bar_baz:23|c"[..]),
+            complete(ParsedMetric::Counter("foo.bar_baz".to_owned(), 23))
+        )
+    }
+
+    #[test]
+    fn it_parses_counter_with_sample_rate() {
+        assert_eq!(
+            parse_counter(&b"foo.bar_baz:34|c|@5"[..]),
+            complete(ParsedMetric::Counter("foo.bar_baz".to_owned(), 34))
         )
     }
 }
