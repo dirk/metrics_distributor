@@ -14,3 +14,6 @@ nom = "1.2.0"
 
 [[example]]
 name = "server"
+
+[[example]]
+name = "statsd_server"
