@@ -42,3 +42,42 @@ impl LogLineReader for StandardLogLineReader {
         metrics
     } // fn read
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{LogLineReader, StandardLogLineReader};
+    use super::super::metrics::*;
+
+    #[test]
+    fn it_reads_measure() {
+        let reader = StandardLogLineReader;
+        let line = "measure#foo=1.2\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![Measure("foo".to_owned(), 1.2)]
+        )
+    }
+
+    #[test]
+    fn it_reads_count() {
+        let reader = StandardLogLineReader;
+        let line = "count#foo=1\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![Count("foo".to_owned(), 1)]
+        )
+    }
+
+    #[test]
+    fn it_returns_nothing_on_failed_read() {
+        let reader = StandardLogLineReader;
+        let line = "metric#bar=3.4\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![]
+        )
+    }
+}
