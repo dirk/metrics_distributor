@@ -11,9 +11,17 @@ use super::super::metrics::AggregatedMetrics;
 
 pub struct DatadogForwarder {
     api_key: String,
+    base_url: String,
 }
 
 impl DatadogForwarder {
+    pub fn new(api_key: String) -> DatadogForwarder {
+        DatadogForwarder {
+            api_key: api_key,
+            base_url: "https://app.datadoghq.com/api".to_owned(),
+        }
+    }
+
     fn serialize_metrics(metrics: AggregatedMetrics) -> Json {
         let timestamp = UTC::now().timestamp();
 
@@ -35,7 +43,7 @@ impl DatadogForwarder {
     }
 
     fn post<'a>(&'a self, client: &'a Client, path: &str) -> RequestBuilder {
-        let path = format!("https://app.datadoghq.com/api{}?api_key={}", path, self.api_key);
+        let path = format!("{}{}?api_key={}", self.base_url, path, self.api_key);
 
         client.post(&path)
             .header(ContentType::json())
