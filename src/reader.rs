@@ -11,7 +11,7 @@ pub struct StandardLogLineReader;
 
 lazy_static! {
     static ref LOG_MEASURE_REGEX: Regex =
-        Regex::new(r"measure#([a-zA-Z0-9._]+)=(\d+(?:\.\d+))").unwrap();
+        Regex::new(r"measure#([a-zA-Z0-9._]+)=(\d+(?:\.\d+)?)").unwrap();
 
     static ref LOG_COUNT_REGEX: Regex =
         Regex::new(r"count#([a-zA-Z0-9._]+)=(\d+)").unwrap();

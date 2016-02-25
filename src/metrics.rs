@@ -13,7 +13,13 @@ pub enum Metric {
     Sample(String, f64),
 }
 
-pub type AggregatedMetric = (String, f64);
+pub enum MetricType {
+    Count,
+    Measure,
+    Sample,
+}
+
+pub type AggregatedMetric = (MetricType, String, f64);
 
 /// All the metrics in a given time interval coalesced into a single value for each metric.
 pub struct AggregatedMetrics {
@@ -29,7 +35,7 @@ impl AggregatedMetrics {
 
     pub fn aggregate_counts(&mut self, counts: hash_map::Iter<String, u64>) {
         for (name, value) in counts {
-            self.metrics.push((name.to_owned(), *value as f64))
+            self.metrics.push((MetricType::Count, name.to_owned(), *value as f64))
         }
     }
 
@@ -40,27 +46,31 @@ impl AggregatedMetrics {
 
             let min          = *sorted.first().unwrap();
             let max          = *sorted.last().unwrap();
-            let median       = sorted[(sorted.len() / 2) - 1];
+            let median       = sorted[sorted.len() / 2]; // TODO: Improve how we calculate the median
             let average      = sorted.iter().fold(0.0, |sum, val| { sum + val }) / (sorted.len() as f64);
             let percentile95 = sorted[(sorted.len() as f64 * 0.95) as usize];
 
-            self.metrics.push((format!("{}.min",          name.clone()), min));
-            self.metrics.push((format!("{}.max",          name.clone()), max));
-            self.metrics.push((format!("{}.median",       name.clone()), median));
-            self.metrics.push((format!("{}.avg",          name.clone()), average));
-            self.metrics.push((format!("{}.95percentile", name.clone()), percentile95));
+            self.metrics.push((MetricType::Measure, format!("{}.min",          name.clone()), min));
+            self.metrics.push((MetricType::Measure, format!("{}.max",          name.clone()), max));
+            self.metrics.push((MetricType::Measure, format!("{}.median",       name.clone()), median));
+            self.metrics.push((MetricType::Measure, format!("{}.avg",          name.clone()), average));
+            self.metrics.push((MetricType::Measure, format!("{}.95percentile", name.clone()), percentile95));
 
-            self.metrics.push((format!("{}.count", name.clone()), sorted.len() as f64));
+            self.metrics.push((MetricType::Count,   format!("{}.count", name.clone()), sorted.len() as f64));
         }
     }
 
     pub fn aggregate_samples(&mut self, samples: hash_map::Iter<String, f64>) {
         for (name, value) in samples {
-            self.metrics.push((name.to_owned(), *value as f64))
+            self.metrics.push((MetricType::Sample, name.to_owned(), *value as f64))
         }
     }
 
     pub fn iter(&self) -> Iter<AggregatedMetric> {
         self.metrics.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.metrics.len()
     }
 }
