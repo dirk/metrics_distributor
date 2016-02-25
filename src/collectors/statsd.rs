@@ -1,18 +1,23 @@
 use std::io::{BufRead, BufReader};
-use std::net::TcpListener;
+use std::net::{TcpListener, ToSocketAddrs};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::u64;
 
-pub struct StatsdListener {
-    listener: TcpListener,
-}
+use super::super::parsers::statsd::parse_metrics;
 
-impl StatsdListener {
-    pub fn listen(&self) {
+pub struct StatsdTcpListener;
+
+impl StatsdTcpListener {
+    pub fn new() -> StatsdTcpListener {
+        StatsdTcpListener
+    }
+
+    pub fn listen<A>(&self, addr: A)
+        where A: ToSocketAddrs {
         let (send, recv) = channel();
 
-        let listener = self.listener.try_clone().unwrap();
+        let listener = TcpListener::bind(addr).unwrap();
         thread::spawn(move || {
             accept_on_listener(listener, send)
         });
