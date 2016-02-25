@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::thread::{self, sleep, JoinHandle};
+use std::time::Duration;
 
 use metrics::*;
 
@@ -8,10 +10,6 @@ pub struct BaseStore {
     counts: HashMap<String, u64>,
     measures: HashMap<String, Vec<f64>>,
     samples: HashMap<String, f64>,
-
-    /// For how long it will collect its metrics before reporting the
-    /// accumulated value of the metric.
-    flush_interval: Seconds,
 }
 
 impl BaseStore {
@@ -20,7 +18,6 @@ impl BaseStore {
             counts: HashMap::new(),
             measures: HashMap::new(),
             samples: HashMap::new(),
-            flush_interval: 10,
         }
     }
 
@@ -81,6 +78,22 @@ impl SharedStore {
     pub fn flush(&self) -> AggregatedMetrics {
         let mut store = self.shared.lock().unwrap();
         store.flush()
+    }
+
+    pub fn flush_every<F>(&self, interval: Duration, callback: F) -> JoinHandle<()>
+        where F: Fn(AggregatedMetrics) + Send + 'static {
+
+        let shared = self.shared.clone();
+
+        thread::spawn(move || {
+            loop {
+                sleep(interval);
+
+                let aggregated = shared.lock().unwrap().flush();
+
+                callback(aggregated);
+            }
+        })
     }
 }
 
