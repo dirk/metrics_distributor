@@ -18,13 +18,19 @@ pub struct AggregatedMetrics {
 }
 
 impl AggregatedMetrics {
-    fn aggregate_counts(&mut self, counts: hash_map::Iter<String, u64>) {
+    pub fn new() -> AggregatedMetrics {
+        AggregatedMetrics {
+            metrics: vec![],
+        }
+    }
+
+    pub fn aggregate_counts(&mut self, counts: hash_map::Iter<String, u64>) {
         for (name, value) in counts {
             self.metrics.push((name.to_owned(), *value as f64))
         }
     }
 
-    fn aggregate_measures(&mut self, measures: hash_map::Iter<String, Vec<f64>>) {
+    pub fn aggregate_measures(&mut self, measures: hash_map::Iter<String, Vec<f64>>) {
         for (name, values) in measures {
             let mut sorted = values.clone();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Equal));
@@ -45,7 +51,7 @@ impl AggregatedMetrics {
         }
     }
 
-    fn aggregate_samples(&mut self, samples: hash_map::Iter<String, f64>) {
+    pub fn aggregate_samples(&mut self, samples: hash_map::Iter<String, f64>) {
         for (name, value) in samples {
             self.metrics.push((name.to_owned(), *value as f64))
         }

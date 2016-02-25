@@ -45,6 +45,21 @@ impl BaseStore {
             }
         }
     } // fn record
+
+    fn flush(&mut self) -> AggregatedMetrics {
+        let mut aggregated = AggregatedMetrics::new();
+
+        aggregated.aggregate_counts(self.counts.iter());
+        self.counts = HashMap::new();
+
+        aggregated.aggregate_measures(self.measures.iter());
+        self.measures = HashMap::new();
+
+        aggregated.aggregate_samples(self.samples.iter());
+        self.samples = HashMap::new();
+
+        aggregated
+    } // fn flush
 }
 
 /// Thread-safe interface to the store. In most cases this is what you
