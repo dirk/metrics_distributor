@@ -13,7 +13,7 @@ lazy_static = "0.1.15"
 nom = "1.2.0"
 
 [[example]]
-name = "server"
+name = "http_server"
 
 [[example]]
 name = "statsd_server"
