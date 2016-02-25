@@ -3,6 +3,8 @@ name = "metrics_distributor"
 version = "0.1.0"
 authors = ["Dirk Gadsden <dirk@esherido.com>"]
 description = "Ingest logs and forward aggregated data to APIs/services."
+license = "BSD-3-Clause"
+repository = "https://github.com/dirk/metrics_distributor"
 
 [dependencies]
 hyper = "0.7.2"
