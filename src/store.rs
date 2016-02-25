@@ -9,9 +9,6 @@ pub struct BaseStore {
     measures: HashMap<String, Vec<f64>>,
     samples: HashMap<String, f64>,
 
-    // TODO: Implement samples
-    // samples: HashMap<String, Sample>,
-
     /// For how long it will collect its metrics before reporting the
     /// accumulated value of the metric.
     flush_interval: Seconds,

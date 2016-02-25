@@ -1,4 +1,5 @@
 use std::collections::hash_map;
+use std::slice::Iter;
 use std::cmp::Ordering::Equal;
 
 pub type Seconds = u8;
@@ -12,9 +13,11 @@ pub enum Metric {
     Sample(String, f64),
 }
 
+pub type AggregatedMetric = (String, f64);
+
 /// All the metrics in a given time interval coalesced into a single value for each metric.
 pub struct AggregatedMetrics {
-    metrics: Vec<(String, f64)>,
+    metrics: Vec<AggregatedMetric>,
 }
 
 impl AggregatedMetrics {
@@ -55,5 +58,9 @@ impl AggregatedMetrics {
         for (name, value) in samples {
             self.metrics.push((name.to_owned(), *value as f64))
         }
+    }
+
+    pub fn iter(&self) -> Iter<AggregatedMetric> {
+        self.metrics.iter()
     }
 }
