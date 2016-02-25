@@ -67,3 +67,58 @@ impl SharedStore {
         store.record(metrics)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::BaseStore;
+    use super::super::metrics::*;
+
+    fn get_store_with_metrics() -> BaseStore {
+        let metrics = vec![
+            Count("foo".to_owned(), 1),
+            Count("foo".to_owned(), 2),
+            Measure("bar".to_owned(), 3.4),
+            Measure("bar".to_owned(), 5.6),
+            Sample("baz".to_owned(), 7.8),
+            Sample("baz".to_owned(), 9.0),
+        ];
+
+        let mut store = BaseStore::new();
+
+        store.record(metrics);
+
+        store
+    }
+
+    #[test]
+    fn it_records_count() {
+        let store = get_store_with_metrics();
+
+        let mut expected_counts = HashMap::new();
+        expected_counts.insert("foo".to_owned(), 3);
+
+        assert_eq!(store.counts, expected_counts)
+    }
+
+    #[test]
+    fn it_records_measure() {
+        let store = get_store_with_metrics();
+
+        let mut expected_measures: HashMap<String, Vec<f64>> = HashMap::new();
+        expected_measures.insert("bar".to_owned(), vec![3.4, 5.6]);
+
+        assert_eq!(store.measures, expected_measures)
+    }
+
+    #[test]
+    fn it_records_sample() {
+        let store = get_store_with_metrics();
+
+        let mut expected_samples = HashMap::new();
+        expected_samples.insert("baz".to_owned(), 9.0);
+
+        assert_eq!(store.samples, expected_samples)
+    }
+}
