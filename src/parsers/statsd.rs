@@ -10,6 +10,8 @@ use nom::{
     IResult
 };
 
+use super::super::metrics::Metric;
+
 /// Parsed StatsD metric.
 ///
 /// See here for more details: https://github.com/b/statsd_spec#metric-types--formats
@@ -18,6 +20,18 @@ pub enum ParsedMetric {
     Counter(String, u64),
     Gauge(String, u64),
     Timer(String, u64),
+}
+
+impl ParsedMetric {
+    pub fn to_standard_metric(&self) -> Metric {
+        use self::ParsedMetric::*;
+
+        match self {
+            &Counter(ref name, value) => Metric::Count(name.clone(), value),
+            &Gauge(ref name, value)   => Metric::Sample(name.clone(), value as f64),
+            &Timer(ref name, value)   => Metric::Measure(name.clone(), value as f64),
+        }
+    }
 }
 
 pub type ParseResult<'a> = IResult<&'a [u8], ParsedMetric>;

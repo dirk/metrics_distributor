@@ -3,7 +3,7 @@ use iron::middleware::Handler;
 use iron::status::Status;
 use std::io::Read;
 
-use super::super::{SharedStore};
+use super::super::SharedStore;
 use super::super::metrics::Metric;
 use super::super::reader::LogLineReader;
 
