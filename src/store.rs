@@ -7,6 +7,7 @@ use metrics::*;
 pub struct BaseStore {
     counts: HashMap<String, u64>,
     measures: HashMap<String, Vec<f64>>,
+    samples: HashMap<String, f64>,
 
     // TODO: Implement samples
     // samples: HashMap<String, Sample>,
@@ -21,6 +22,7 @@ impl BaseStore {
         BaseStore {
             counts: HashMap::new(),
             measures: HashMap::new(),
+            samples: HashMap::new(),
             flush_interval: 10,
         }
     }
@@ -36,6 +38,10 @@ impl BaseStore {
                     let values = self.measures.entry(name).or_insert(Vec::new());
                     values.push(value);
                 },
+                Sample(name, value) => {
+                    let entry = self.samples.entry(name).or_insert(0.0);
+                    *entry = value;
+                }
             }
         }
     } // fn record
