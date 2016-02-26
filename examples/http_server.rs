@@ -4,7 +4,7 @@ extern crate router;
 
 use metrics_distributor::SharedStore;
 use metrics_distributor::collectors::http::LogDrainHandler;
-use metrics_distributor::reader::StandardLogLineReader;
+use metrics_distributor::parsers::log_line::StandardLogLineReader;
 use iron::prelude::*;
 use router::Router;
 

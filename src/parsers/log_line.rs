@@ -143,39 +143,82 @@ impl LogLineReader for HerokuLogLineReader {
 
 #[cfg(test)]
 mod tests {
-    use super::{LogLineReader, StandardLogLineReader};
+    use super::{
+        LogLineReader,
+        StandardLogLineReader,
+        HerokuLogLineReader
+    };
     use super::super::super::metrics::*;
 
     #[test]
-    fn it_reads_measure() {
+    fn standard_reader_reads_measure() {
         let reader = StandardLogLineReader;
         let line = "measure#foo=1.2\n";
 
         assert_eq!(
             reader.read(line),
-            vec![Measure("foo".to_owned(), 1.2)]
+            vec![ Measure("foo".to_owned(), 1.2) ]
         )
     }
 
     #[test]
-    fn it_reads_count() {
+    fn standard_reader_reads_count() {
         let reader = StandardLogLineReader;
         let line = "count#foo=1\n";
 
         assert_eq!(
             reader.read(line),
-            vec![Count("foo".to_owned(), 1)]
+            vec![ Count("foo".to_owned(), 1) ]
         )
     }
 
     #[test]
-    fn it_returns_nothing_on_failed_read() {
+    fn standard_reader_returns_nothing_on_failed_read() {
         let reader = StandardLogLineReader;
         let line = "metric#bar=3.4\n";
 
         assert_eq!(
             reader.read(line),
             vec![]
+        )
+    }
+
+    #[test]
+    fn heroku_reader_reads_loads() {
+        let reader = HerokuLogLineReader;
+        let line = "2016-02-26 21:34:59.429615+00:00 heroku web.2 - - source=web.2 dyno=heroku.123.XYZ sample#load_avg_1m=0.56 sample#load_avg_5m=0.26 sample#load_avg_15m=0.17\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![ Measure("dyno.web.load_avg_1m".to_owned(), 0.56) ]
+        )
+    }
+
+    #[test]
+    fn heroku_reader_reads_errors() {
+        let reader = HerokuLogLineReader;
+        let line = "2016-02-26 21:50:36.352129+00:00 heroku router - - sock=backend at=error code=H18 desc=\"Server Request Interrupted\" method=GET path=\"/\" host=www.example.com request_id=XYZ fwd=\"1.2.3.4\" dyno=web.5 connect=0ms service=495ms status=503 bytes=1648\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![
+                Count("dyno.web.status.503".to_owned(), 1),
+                Count("heroku.error.H18".to_owned(), 1),
+            ]
+        )
+    }
+
+    #[test]
+    fn heroku_reader_reads_service_times() {
+        let reader = HerokuLogLineReader;
+        let line = "2016-02-26 21:34:59.370813+00:00 heroku router - - at=info method=PUT path=\"/\" host=www.example.com request_id=XYZ fwd=\"1.2.3.4\" dyno=web.1 connect=0ms service=39ms status=200 bytes=1627\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![
+                Measure("dyno.web.service_time".to_owned(), 39.0),
+                Count("dyno.web.status.200".to_owned(), 1),
+            ]
         )
     }
 }
