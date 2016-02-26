@@ -19,9 +19,11 @@ pub enum MetricType {
     Sample,
 }
 
+/// The final value resulting from aggregating a metric's values.
 pub type AggregatedMetric = (MetricType, String, f64);
 
-/// All the metrics in a given time interval coalesced into a single value for each metric.
+/// All the metrics in a given time interval coalesced into a single value for
+/// each metric.
 pub struct AggregatedMetrics {
     metrics: Vec<AggregatedMetric>,
 }

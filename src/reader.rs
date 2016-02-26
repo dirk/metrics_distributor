@@ -3,10 +3,15 @@ use std::str::{FromStr};
 
 use super::metrics::*;
 
+/// Reader that takes a log line string and returns any metrics found in it.
 pub trait LogLineReader: Send + Sync {
     fn read(&self, &str) -> Vec<Metric>;
 }
 
+/// Reads metrics from log lines in the standard formats:
+///
+/// - Measures: `measure#metric=1.2`
+/// - Counts: `count#metric=3`
 pub struct StandardLogLineReader;
 
 lazy_static! {

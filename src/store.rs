@@ -89,7 +89,8 @@ impl SharedStore {
             loop {
                 sleep(interval);
 
-                let aggregated = shared.lock().unwrap().flush();
+                let mut store = shared.lock().unwrap();
+                let aggregated = store.flush();
 
                 callback(aggregated);
             }
