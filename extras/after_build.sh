@@ -21,8 +21,11 @@ fi
 
 rev=$(git rev-parse --short HEAD)
 
-# Build all the docs, then move into the documentation root
+# Build all the docs
 cargo doc
+echo "<meta http-equiv=\"refresh\" content=\"0;url=metrics_distributor/index.html\">" > target/doc/index.html
+
+# Move into the documentation root
 cd target/doc
 
 git init
@@ -31,7 +34,7 @@ git config user.email "dirk@esherido.com"
 
 git remote add upstream "https://$GH_TOKEN@github.com/dirk/metrics_distributor.git"
 git fetch upstream
-git reset upstream/gh-pages
+git reset -q upstream/gh-pages
 
 touch .
 
