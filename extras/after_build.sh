@@ -5,9 +5,17 @@
 
 set -o errexit -o nounset
 
+RUSTC_VERSION=$(rustc --version)
+
 if [ "$TRAVIS_BRANCH" != "master" ]
 then
   echo "This commit was made against the $TRAVIS_BRANCH and not the master! No deploy!"
+  exit 0
+fi
+
+if [[ ! "$RUSTC_VERSION" =~ "1.6.0" ]]
+then
+  echo "Wrong version of rustc: expected 1.6.0, got $RUSTC_VERSION"
   exit 0
 fi
 
@@ -15,7 +23,7 @@ rev=$(git rev-parse --short HEAD)
 
 # Build all the docs, then move into the documentation root
 cargo doc
-cd target/doc/metrics_distributor
+cd target/doc
 
 git init
 git config user.name "Dirk Gadsden"
