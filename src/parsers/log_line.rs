@@ -48,10 +48,103 @@ impl LogLineReader for StandardLogLineReader {
     } // fn read
 }
 
+/// Reads Heroku's logging metrics.
+pub struct HerokuLogLineReader;
+
+lazy_static! {
+    static ref DYNO_TYPE_REGEX: Regex =
+        Regex::new(r"dyno=(\w+)").unwrap();
+
+    static ref SERVICE_REGEX: Regex =
+        Regex::new(r"service=(\d+)ms").unwrap();
+
+    static ref STATUS_REGEX: Regex =
+        Regex::new(r"status=(\d+)").unwrap();
+
+    static ref HEROKU_ERROR_CODE_REGEX: Regex =
+        Regex::new(r"code=(H\d+)").unwrap();
+
+    static ref LOAD_AVG_1M_REGEX: Regex =
+        Regex::new(r"sample#load_avg_1m=([0-9.]+)").unwrap();
+
+    static ref SOURCE_REGEX: Regex =
+        Regex::new(r"source=(\w+).(\d+)").unwrap();
+}
+
+impl HerokuLogLineReader {
+    fn parse_status(line: &str) -> Vec<Metric> {
+        let mut metrics: Vec<Metric> = vec![];
+
+        let status = match STATUS_REGEX.captures(line) {
+            Some(captures) => captures.at(1).unwrap(),
+            None => return vec![],
+        };
+        let status = u16::from_str(status).unwrap();
+
+        let service = SERVICE_REGEX.captures(line)
+            .and_then(|c| c.at(1))
+            .and_then(|s| u32::from_str(s).ok())
+            .unwrap();
+
+        let dyno_type = DYNO_TYPE_REGEX.captures(line).and_then(|c| c.at(1)).unwrap();
+
+        let base = format!("dyno.{}", dyno_type);
+
+        // Don't record timing for 499 and 5xx errors
+        if status < 499 || status > 599 {
+            let service_time = format!("{}.service_time", base);
+            metrics.push(Measure(service_time.to_owned(), service as f64));
+        }
+
+        // Count the status
+        metrics.push(Count(format!("{}.status.{}", base, status).to_owned(), 1));
+
+        metrics
+    }
+
+    fn parse_heroku_codes(line: &str) -> Vec<Metric> {
+        let is_warning = line.contains("at=warning");
+        let is_error   = line.contains("at=error");
+
+        if !is_warning && !is_error { return vec![] }
+
+        let code = HEROKU_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1)).unwrap();
+
+        vec![
+            Count(format!("heroku.error.{}", code), 1)
+        ]
+    }
+
+    fn parse_loads(line: &str) -> Vec<Metric> {
+        let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line) {
+            Some(captures) => captures.at(1).and_then(|c| f64::from_str(c).ok()).unwrap(),
+            None => return vec![],
+        };
+
+        let dyno_type = SOURCE_REGEX.captures(line).and_then(|c| c.at(1)).unwrap();
+
+        vec![
+            Measure(format!("dyno.{}.load_avg_1m", dyno_type), load_avg_1m)
+        ]
+    }
+}
+
+impl LogLineReader for HerokuLogLineReader {
+    fn read(&self, line: &str) -> Vec<Metric> {
+        let mut metrics: Vec<Metric> = vec![];
+
+        metrics.extend(HerokuLogLineReader::parse_status(line));
+        metrics.extend(HerokuLogLineReader::parse_heroku_codes(line));
+        metrics.extend(HerokuLogLineReader::parse_loads(line));
+
+        metrics
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{LogLineReader, StandardLogLineReader};
-    use super::super::metrics::*;
+    use super::super::super::metrics::*;
 
     #[test]
     fn it_reads_measure() {
