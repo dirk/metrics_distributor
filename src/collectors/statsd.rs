@@ -1,8 +1,15 @@
 use std::io::{BufRead, BufReader};
-use std::net::{TcpListener, TcpStream, ToSocketAddrs};
+use std::str;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::time::Duration;
+
+use std::net::{
+    TcpListener,
+    TcpStream,
+    ToSocketAddrs,
+    UdpSocket
+};
 
 use super::super::SharedStore;
 use super::super::parsers::statsd::parse_metrics;
@@ -29,22 +36,7 @@ impl StatsdTcpListener {
         });
 
         for line in recv {
-            self.handle_line(line)
-        }
-    }
-
-    fn handle_line(&self, line: String) {
-        let line_trimmed = line.trim_right();
-        let result = parse_metrics(line_trimmed.as_bytes());
-
-        match result {
-            Ok(metrics) => {
-                let metrics = metrics.iter().map(|m| m.to_standard_metric()).collect();
-                self.store.record(metrics)
-            },
-            Err(err) => {
-                println!("{:?}", err)
-            },
+            handle_line(&self.store, line)
         }
     }
 
@@ -86,6 +78,61 @@ impl StatsdTcpListener {
                 },
             }
         }
+    } // fn handle_client
+} // struct StatsdTcpListener
+
+pub struct StatsdUdpListener {
+    store: SharedStore,
+}
+
+impl StatsdUdpListener {
+    pub fn new(store: SharedStore) -> StatsdUdpListener {
+        StatsdUdpListener {
+            store: store,
+        }
     }
 
+    pub fn listen<A>(&self, addr: A)
+        where A: ToSocketAddrs {
+        let (send, recv) = channel();
+
+        let socket = UdpSocket::bind(addr).unwrap();
+
+        thread::spawn(move || {
+            let mut buf = [0; 1024];
+            loop {
+                let (bytes_read, _) = match socket.recv_from(&mut buf) {
+                    Ok(pair) => pair,
+                    Err(_) => return,
+                };
+
+                // Get a string from just the amount of bytes read.
+                let message: &str = match str::from_utf8(&buf[..bytes_read]) {
+                    Ok(s) => s,
+                    Err(_) => return,
+                };
+
+                send.send(message.to_owned()).unwrap();
+            }
+        });
+
+        for line in recv {
+            handle_line(&self.store, line)
+        }
+    } // fn listen
+} // impl StatsdUdpListener
+
+fn handle_line(store: &SharedStore, line: String) {
+    let line_trimmed = line.trim_right();
+    let result = parse_metrics(line_trimmed.as_bytes());
+
+    match result {
+        Ok(metrics) => {
+            let metrics = metrics.iter().map(|m| m.to_standard_metric()).collect();
+            store.record(metrics)
+        },
+        Err(err) => {
+            println!("{:?}", err)
+        },
+    }
 }
