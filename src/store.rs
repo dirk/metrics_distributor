@@ -44,13 +44,13 @@ impl BaseStore {
         let mut aggregated = AggregatedMetrics::new();
 
         aggregated.aggregate_counts(self.counts.iter());
-        self.counts = HashMap::new();
+        self.counts.clear();
 
         aggregated.aggregate_measures(self.measures.iter());
-        self.measures = HashMap::new();
+        self.measures.clear();
 
         aggregated.aggregate_samples(self.samples.iter());
-        self.samples = HashMap::new();
+        self.samples.clear();
 
         aggregated
     } // fn flush
