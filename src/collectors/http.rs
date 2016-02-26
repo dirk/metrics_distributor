@@ -5,7 +5,7 @@ use std::io::Read;
 
 use super::super::SharedStore;
 use super::super::metrics::Metric;
-use super::super::reader::LogLineReader;
+use super::super::parsers::log_line::LogLineReader;
 
 pub struct LogDrainHandler {
     store: SharedStore,

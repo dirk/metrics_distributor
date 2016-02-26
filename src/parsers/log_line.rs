@@ -1,7 +1,7 @@
 use regex::{Regex};
 use std::str::{FromStr};
 
-use super::metrics::*;
+use super::super::metrics::*;
 
 /// Reader that takes a log line string and returns any metrics found in it.
 pub trait LogLineReader: Send + Sync {

@@ -14,7 +14,6 @@ pub mod forwarders;
 pub mod store;
 pub mod metrics;
 pub mod parsers;
-pub mod reader;
 
 pub use store::*;
 
