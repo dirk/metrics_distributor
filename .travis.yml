@@ -8,3 +8,10 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
+
+after_success:
+ - 'test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash extras/after_build.sh'
+
+env:
+  global:
+    secure: Hmfudcf+K4O+1H8FXua3KKw/yHqUvqjgvVFjf9WBD508InshkHy8mTtyy/USgVbMCtamaRx7qGQP5ZSEK2YeA2d9MR1ProF1KPbmvJchc8W3hWeNEf6CzcDgVw1qkhgiI0Cr0fF0xuJp1lCJN+ZLEB7s+vo4wgBICfVn7zz4GhCJnke5bj2ZGY6hefKGzdJGSUwgPlt3pFeHAy+6oCzbVj2wBwBMJHfTispkFg9RB62O2HZCWQ53+fffu3/Kp3MeBE4VhbvpCAGhixzR0tyH9w9ZHcMsGODFh9SeEFmTNfw0quqf89tQQ41Pgs1XAjsZLEXvXDr/UQt3AN/4HDh6zjUQAFGrDKSAG06f7/kNx2K9iGDAshqEXcLwbcGl4254v8ROy1cqWhoky1JNiWfywjIDQeROROV9xfQnnKtGxv83DFqUSVzaEHJ72hVaKqbzHUF29RmLJ0rc6tb+1X91mzPbeTOCvoAl8ce2aIkMofSOn9aHqqeaKIbIloXBoGiWN3hRcviuicgAb/cnfDfYQblvg7hN1nRpi3DjbMOzgE9aTs0tBGOVMelsvmXObD8NEfXSDZIAkhUIRnL/yhqNAkfMqK7f0KxNjcLbz4Ta5CiXcz7Czndi0fME0xrAOSdiWP9I8N8HZqSI3zYdgdOQ8ds8slRTzwdWZSwvMxItj3s=
