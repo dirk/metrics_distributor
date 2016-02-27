@@ -7,14 +7,14 @@ use super::super::SharedStore;
 use super::super::metrics::Metric;
 use super::super::parsers::log_line::LogLineReader;
 
+/// Accepts HTTP requests and reads lines from the body. Each line will be
+/// passed to its set of `readers` and any metrics collected by those readers
+/// will be recorded in the `store`.
 pub struct LogDrainHandler {
     store: SharedStore,
     readers: Vec<Box<LogLineReader>>,
 }
 
-/// Accepts HTTP requests and reads lines from the body. Each line will be
-/// passed to its set of `readers` and any metrics collected by those readers
-/// will be recorded in the `store`.
 impl LogDrainHandler {
     pub fn new(store: SharedStore, readers: Vec<Box<LogLineReader>>) -> LogDrainHandler {
         LogDrainHandler {

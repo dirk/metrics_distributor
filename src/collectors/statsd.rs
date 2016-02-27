@@ -81,6 +81,7 @@ impl StatsdTcpListener {
     } // fn handle_client
 } // struct StatsdTcpListener
 
+/// Listens for StatsD UDP datagrams.
 pub struct StatsdUdpListener {
     store: SharedStore,
 }

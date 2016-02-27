@@ -72,7 +72,9 @@ lazy_static! {
 }
 
 impl HerokuLogLineReader {
-    fn parse_status(line: &str) -> Vec<Metric> {
+    /// Parses Heroku router status lines for the response service time (how
+    /// long it took) and the HTTP response status.
+    pub fn parse_status(line: &str) -> Vec<Metric> {
         let mut metrics: Vec<Metric> = vec![];
 
         let status = match STATUS_REGEX.captures(line) {
@@ -102,7 +104,11 @@ impl HerokuLogLineReader {
         metrics
     }
 
-    fn parse_heroku_codes(line: &str) -> Vec<Metric> {
+    /// Parses Heroku warning and error codes like "Hxx" where "xx" is a pair
+    /// of numbers. See the [Heroku][] site for more details.
+    ///
+    /// [Heroku]: https://devcenter.heroku.com/articles/error-codes
+    pub fn parse_heroku_codes(line: &str) -> Vec<Metric> {
         let is_warning = line.contains("at=warning");
         let is_error   = line.contains("at=error");
 
@@ -115,7 +121,7 @@ impl HerokuLogLineReader {
         ]
     }
 
-    fn parse_loads(line: &str) -> Vec<Metric> {
+    pub fn parse_loads(line: &str) -> Vec<Metric> {
         let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line) {
             Some(captures) => captures.at(1).and_then(|c| f64::from_str(c).ok()).unwrap(),
             None => return vec![],

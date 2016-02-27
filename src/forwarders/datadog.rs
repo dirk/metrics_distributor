@@ -7,7 +7,7 @@ use rustc_serialize::json::{self, Json, ToJson};
 use std::collections::BTreeMap;
 
 use super::Forwarder;
-use super::super::metrics::{AggregatedMetrics, MetricType};
+use super::super::metrics::AggregatedMetrics;
 
 pub struct DatadogForwarder {
     api_key: String,
@@ -23,6 +23,8 @@ impl DatadogForwarder {
     }
 
     fn serialize_metrics(metrics: AggregatedMetrics) -> Json {
+        use super::super::metrics::AggregatedMetricType::*;
+
         let timestamp = UTC::now().timestamp();
 
         let series: Vec<Json> = metrics
@@ -33,9 +35,9 @@ impl DatadogForwarder {
                 let (ref metric_type, ref name, ref value) = *metric;
 
                 let api_type = match *metric_type {
-                    MetricType::Count   => "counter",
-                    MetricType::Measure => "gauge",
-                    MetricType::Sample  => "gauge",
+                    Count   => "counter",
+                    Measure => "gauge",
+                    Sample  => "gauge",
                 };
 
                 object.insert("metric".to_owned(), name.to_json());
