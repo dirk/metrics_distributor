@@ -121,6 +121,7 @@ impl HerokuLogLineReader {
         ]
     }
 
+    /// Parses the `sample#load_avg_1m=` metrics from Heroku logs.
     pub fn parse_loads(line: &str) -> Vec<Metric> {
         let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line) {
             Some(captures) => captures.at(1).and_then(|c| f64::from_str(c).ok()).unwrap(),

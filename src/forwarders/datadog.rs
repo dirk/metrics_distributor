@@ -1,4 +1,4 @@
-//! Reports metrics to Datadog using their HTTPS API.
+//! Reports metrics to Datadog through their HTTPS API.
 
 use chrono::UTC;
 use hyper::client::{Client, RequestBuilder};
@@ -9,9 +9,14 @@ use std::collections::BTreeMap;
 use super::Forwarder;
 use super::super::metrics::AggregatedMetrics;
 
+/// Forwards metrics to Datadog via its HTTPS API.
+///
+/// See [their documentation][] for more details.
+///
+/// [their documentation]: http://docs.datadoghq.com/api/
 pub struct DatadogForwarder {
-    api_key: String,
-    base_url: String,
+    pub api_key: String,
+    pub base_url: String,
 }
 
 impl DatadogForwarder {

@@ -11,9 +11,12 @@ extern crate rustc_serialize;
 
 pub mod collectors;
 pub mod forwarders;
-pub mod store;
-pub mod metrics;
 pub mod parsers;
+
+/// Types representing collected and aggregated metrics.
+pub mod metrics;
+/// Stores actually record collected metrics.
+pub mod store;
 
 pub use store::*;
 
