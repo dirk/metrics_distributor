@@ -92,8 +92,11 @@ impl HerokuLogLineReader {
 
         let base = format!("dyno.{}", dyno_type);
 
+        // Counting a 499 as a 500
+        let is_500 = status >= 499 && status < 600;
+
         // Don't record timing for 499 and 5xx errors
-        if status < 499 || status > 599 {
+        if !is_500 {
             let service_time = format!("{}.service_time", base);
             metrics.push(Measure(service_time.to_owned(), service as f64));
         }

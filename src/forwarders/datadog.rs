@@ -40,7 +40,7 @@ impl DatadogForwarder {
                 let (ref metric_type, ref name, ref value) = *metric;
 
                 let api_type = match *metric_type {
-                    Count   => "counter",
+                    Count   => "count",
                     Measure => "gauge",
                     Sample  => "gauge",
                 };
