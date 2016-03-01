@@ -36,6 +36,12 @@ impl AggregatedMetrics {
         }
     }
 
+    pub fn with_metrics(metrics: Vec<AggregatedMetric>) -> AggregatedMetrics {
+        AggregatedMetrics {
+            metrics: metrics,
+        }
+    }
+
     pub fn aggregate_counts(&mut self, counts: hash_map::Iter<String, u64>) {
         for (name, value) in counts {
             self.metrics.push((AggregatedMetricType::Count, name.to_owned(), *value as f64))

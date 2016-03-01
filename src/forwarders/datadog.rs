@@ -20,9 +20,9 @@ pub struct DatadogForwarder {
 }
 
 impl DatadogForwarder {
-    pub fn new(api_key: String) -> DatadogForwarder {
+    pub fn new(api_key: &str) -> DatadogForwarder {
         DatadogForwarder {
-            api_key: api_key,
+            api_key: api_key.to_owned(),
             base_url: "https://app.datadoghq.com/api".to_owned(),
         }
     }
@@ -83,5 +83,41 @@ impl Forwarder for DatadogForwarder {
         if !res.status.is_success() {
             println!("Datadog API Error: {:#?}", res);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DatadogForwarder;
+    use super::super::super::metrics::{
+        AggregatedMetrics,
+        AggregatedMetricType,
+    };
+
+    use rustc_serialize::json::ToJson;
+
+    #[test]
+    fn datadog_forwarder_serializes_metrics() {
+        let metrics = AggregatedMetrics::with_metrics(vec![
+            (AggregatedMetricType::Count, "test_count".to_owned(), 1.0),
+        ]);
+        let json = DatadogForwarder::serialize_metrics(metrics);
+
+        let series = json.find("series").and_then(|s| s.as_array());
+        assert_eq!(series.is_some(), true);
+
+        let series = series.unwrap();
+        assert_eq!(series.len(), 1);
+
+        let item = series[0].as_object().unwrap();
+        assert_eq!(item.get("metric"), Some(&"test_count".to_json()));
+        assert_eq!(item.get("type"),   Some(&"count".to_json()));
+
+        let points = item.get("points").unwrap().as_array().unwrap();
+        assert_eq!(points.len(), 1);
+        let point = points[0].as_array().unwrap();
+        assert_eq!(point.len(), 2);
+        let ref value = point[1];
+        assert_eq!(value, &1.0.to_json());
     }
 }
