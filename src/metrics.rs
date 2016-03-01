@@ -50,6 +50,10 @@ impl AggregatedMetrics {
         }
     }
 
+    /// Rolls up all the given measures. The minimum, maximum, median,
+    /// average (mean), and 95th percentile summary measures will all be
+    /// emitted, as well as a total count of all the individual measures
+    /// received in the period.
     pub fn aggregate_measures(&mut self, measures: hash_map::Iter<String, Vec<f64>>) {
         use self::AggregatedMetricType::*;
 

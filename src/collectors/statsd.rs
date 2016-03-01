@@ -26,6 +26,12 @@ impl StatsdTcpListener {
         }
     }
 
+    /// Spawns a separate thread to listen for TCP connections; connections
+    /// opened then spawn another thread that reads StatsD messages from the
+    /// client and sends those messages back to the calling thread.
+    ///
+    /// The calling thread blocks waiting for messages. When it receives a
+    /// message it parses its metrics and records those metrics in the store.
     pub fn listen<A>(&self, addr: A)
         where A: ToSocketAddrs {
         let (send, recv) = channel();
@@ -93,6 +99,9 @@ impl StatsdUdpListener {
         }
     }
 
+    /// Spawns a separate thread that listens for StatsD UDP datagrams,
+    /// received datagrams are sent back to the calling thread (this will
+    /// block) and the parsed metrics are recorded in the store.
     pub fn listen<A>(&self, addr: A)
         where A: ToSocketAddrs {
         let (send, recv) = channel();

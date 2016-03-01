@@ -16,6 +16,8 @@ pub struct LogDrainHandler {
 }
 
 impl LogDrainHandler {
+    /// Create a new handler with the given vector of readers. Each reader
+    /// will be called on every line the handler receives.
     pub fn new(store: SharedStore, readers: Vec<Box<LogLineReader>>) -> LogDrainHandler {
         LogDrainHandler {
             store: store,
