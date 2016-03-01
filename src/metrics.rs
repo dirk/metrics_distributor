@@ -14,6 +14,7 @@ pub enum Metric {
     Sample(String, f64),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum AggregatedMetricType {
     Count,
     Measure,
@@ -25,6 +26,7 @@ pub type AggregatedMetric = (AggregatedMetricType, String, f64);
 
 /// All the metrics in a given time interval coalesced into a single value for
 /// each metric.
+#[derive(Debug, PartialEq)]
 pub struct AggregatedMetrics {
     metrics: Vec<AggregatedMetric>,
 }

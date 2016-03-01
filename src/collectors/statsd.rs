@@ -137,3 +137,20 @@ fn handle_line(store: &SharedStore, line: String) {
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::handle_line;
+    use super::super::super::SharedStore;
+    use super::super::super::metrics::{AggregatedMetrics, AggregatedMetricType};
+
+    #[test]
+    fn handle_line_parses_metrics() {
+        let store = SharedStore::new();
+        handle_line(&store, "foo:1|g".to_owned());
+
+        assert_eq!(store.flush(), AggregatedMetrics::with_metrics(vec![
+            (AggregatedMetricType::Sample, "foo".to_owned(), 1.0),
+        ]));
+    }
+}
