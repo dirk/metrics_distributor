@@ -61,8 +61,11 @@ lazy_static! {
     static ref STATUS_REGEX: Regex =
         Regex::new(r"status=(\d+)").unwrap();
 
-    static ref HEROKU_ERROR_CODE_REGEX: Regex =
+    static ref HEROKU_HTTP_ERROR_CODE_REGEX: Regex =
         Regex::new(r"code=(H\d+)").unwrap();
+
+    static ref HEROKU_RUNTIME_ERROR_CODE_REGEX: Regex =
+        Regex::new(r"Error (R\d+)").unwrap();
 
     static ref LOAD_AVG_1M_REGEX: Regex =
         Regex::new(r"sample#load_avg_1m=([0-9.]+)").unwrap();
@@ -112,12 +115,15 @@ impl HerokuLogLineReader {
     ///
     /// [Heroku]: https://devcenter.heroku.com/articles/error-codes
     pub fn parse_heroku_codes(line: &str) -> Vec<Metric> {
-        let is_warning = line.contains("at=warning");
-        let is_error   = line.contains("at=error");
+        let http_code    = HEROKU_HTTP_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1));
+        let runtime_code = HEROKU_RUNTIME_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1));
 
-        if !is_warning && !is_error { return vec![] }
-
-        let code = HEROKU_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1)).unwrap();
+        let code = match (http_code, runtime_code) {
+            (Some(code), _) => code,
+            (_, Some(code)) => code,
+            // Early return if we didn't find any error codes
+            (None, None)    => { return vec![] },
+        };
 
         vec![
             Count(format!("heroku.error.{}", code), 1)
@@ -205,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn heroku_reader_reads_errors() {
+    fn heroku_reader_reads_http_errors() {
         let reader = HerokuLogLineReader;
         let line = "2016-02-26 21:50:36.352129+00:00 heroku router - - sock=backend at=error code=H18 desc=\"Server Request Interrupted\" method=GET path=\"/\" host=www.example.com request_id=XYZ fwd=\"1.2.3.4\" dyno=web.5 connect=0ms service=495ms status=503 bytes=1648\n";
 
@@ -214,6 +220,19 @@ mod tests {
             vec![
                 Count("dyno.web.status.503".to_owned(), 1),
                 Count("heroku.error.H18".to_owned(), 1),
+            ]
+        )
+    }
+
+    #[test]
+    fn heroku_reader_reads_runtime_errors() {
+        let reader = HerokuLogLineReader;
+        let line = "2016-02-25 21:35:34.990292+00:00 heroku scheduler.5451 - - Error R14 (Memory quota exceeded)\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![
+                Count("heroku.error.R14".to_owned(), 1),
             ]
         )
     }
