@@ -18,6 +18,9 @@ lazy_static! {
     static ref LOG_MEASURE_REGEX: Regex =
         Regex::new(r"measure#([a-zA-Z0-9._]+)=(\d+(?:\.\d+)?)").unwrap();
 
+    static ref LOG_SAMPLE_REGEX: Regex =
+        Regex::new(r"sample#([a-zA-Z0-9._]+)=(\d+(?:\.\d+)?)").unwrap();
+
     static ref LOG_COUNT_REGEX: Regex =
         Regex::new(r"count#([a-zA-Z0-9._]+)=(\d+)").unwrap();
 }
@@ -25,6 +28,15 @@ lazy_static! {
 impl LogLineReader for StandardLogLineReader {
     fn read(&self, line: &str) -> Vec<Metric> {
         let mut metrics = vec![];
+
+        // Look for counts
+        for cap in LOG_COUNT_REGEX.captures_iter(line) {
+            let name = cap.at(1).unwrap();
+
+            if let Ok(value) = u64::from_str(cap.at(2).unwrap()) {
+                metrics.push(Count(name.to_owned(), value))
+            }
+        }
 
         // Look for measures
         for cap in LOG_MEASURE_REGEX.captures_iter(line) {
@@ -35,12 +47,12 @@ impl LogLineReader for StandardLogLineReader {
             }
         }
 
-        // Look for counts
-        for cap in LOG_COUNT_REGEX.captures_iter(line) {
+        // Look for samples
+        for cap in LOG_SAMPLE_REGEX.captures_iter(line) {
             let name = cap.at(1).unwrap();
 
-            if let Ok(value) = u64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Count(name.to_owned(), value))
+            if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
+                metrics.push(Sample(name.to_owned(), value))
             }
         }
 
@@ -185,6 +197,17 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![ Count("foo".to_owned(), 1) ]
+        )
+    }
+
+    #[test]
+    fn standard_reader_reads_sample() {
+        let reader = StandardLogLineReader;
+        let line = "sample#bar=3.4\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![ Sample("bar".to_owned(), 3.4) ]
         )
     }
 
