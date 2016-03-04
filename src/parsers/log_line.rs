@@ -122,7 +122,7 @@ impl HerokuLogLineReader {
         metrics
     }
 
-    /// Parses Heroku warning and error codes like "Hxx" where "xx" is a pair
+    /// Parses Heroku warning and error codes like "Hxx" and "Rxx" where "xx" is a pair
     /// of numbers. See the [Heroku][] site for more details.
     ///
     /// [Heroku]: https://devcenter.heroku.com/articles/error-codes
