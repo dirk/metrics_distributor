@@ -89,12 +89,12 @@ lazy_static! {
 impl HerokuLogLineReader {
     /// Parses Heroku router status lines for the response service time (how
     /// long it took) and the HTTP response status.
-    pub fn parse_status(line: &str) -> Vec<Metric> {
+    pub fn parse_status(line: &str) -> Option<Vec<Metric>> {
         let mut metrics: Vec<Metric> = vec![];
 
         let status = match STATUS_REGEX.captures(line) {
             Some(captures) => captures.at(1).unwrap(),
-            None => return vec![],
+            None => return None,
         };
         let status = u16::from_str(status).unwrap();
 
@@ -119,51 +119,51 @@ impl HerokuLogLineReader {
         // Count the status
         metrics.push(Count(format!("{}.status.{}", base, status).to_owned(), 1));
 
-        metrics
+        Some(metrics)
     }
 
     /// Parses Heroku warning and error codes like "Hxx" and "Rxx" where "xx" is a pair
     /// of numbers. See the [Heroku][] site for more details.
     ///
     /// [Heroku]: https://devcenter.heroku.com/articles/error-codes
-    pub fn parse_heroku_codes(line: &str) -> Vec<Metric> {
-        let http_code    = HEROKU_HTTP_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1));
-        let runtime_code = HEROKU_RUNTIME_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1));
+    pub fn parse_heroku_code(line: &str) -> Option<Metric> {
+        let code: &str;
 
-        let code = match (http_code, runtime_code) {
-            (Some(code), _) => code,
-            (_, Some(code)) => code,
-            // Early return if we didn't find any error codes
-            (None, None)    => { return vec![] },
-        };
+        if let Some(http_code) = HEROKU_HTTP_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1)) {
+            code = http_code;
 
-        vec![
-            Count(format!("heroku.error.{}", code), 1)
-        ]
+        } else if let Some(runtime_code) = HEROKU_RUNTIME_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1)) {
+            code = runtime_code;
+
+        } else {
+            return None
+        }
+
+        Some(Count(format!("heroku.error.{}", code), 1))
     }
 
     /// Parses the `sample#load_avg_1m=` metrics from Heroku logs.
-    pub fn parse_loads(line: &str) -> Vec<Metric> {
+    pub fn parse_load(line: &str) -> Option<Metric> {
         let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line) {
             Some(captures) => captures.at(1).and_then(|c| f64::from_str(c).ok()).unwrap(),
-            None => return vec![],
+            None => return None,
         };
 
         let dyno_type = SOURCE_REGEX.captures(line).and_then(|c| c.at(1)).unwrap();
 
-        vec![
-            Measure(format!("dyno.{}.load_avg_1m", dyno_type), load_avg_1m)
-        ]
+        Some(Measure(format!("dyno.{}.load_avg_1m", dyno_type), load_avg_1m))
     }
 }
 
 impl LogLineReader for HerokuLogLineReader {
     fn read(&self, line: &str) -> Vec<Metric> {
+        if !line.contains("heroku") { return vec![] }
+
         let mut metrics: Vec<Metric> = vec![];
 
-        metrics.extend(HerokuLogLineReader::parse_status(line));
-        metrics.extend(HerokuLogLineReader::parse_heroku_codes(line));
-        metrics.extend(HerokuLogLineReader::parse_loads(line));
+        if let Some(statuses) = HerokuLogLineReader::parse_status(line)      { metrics.extend(statuses) }
+        if let Some(code)     = HerokuLogLineReader::parse_heroku_code(line) { metrics.push(code) }
+        if let Some(load)     = HerokuLogLineReader::parse_load(line)        { metrics.push(load) }
 
         metrics
     }
