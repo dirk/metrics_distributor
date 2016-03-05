@@ -98,12 +98,18 @@ impl HerokuLogLineReader {
         };
         let status = u16::from_str(status).unwrap();
 
-        let service = SERVICE_REGEX.captures(line)
+        let service = match SERVICE_REGEX.captures(line)
             .and_then(|c| c.at(1))
-            .and_then(|s| u32::from_str(s).ok())
-            .unwrap();
+            .and_then(|s| u32::from_str(s).ok()) {
+                Some(s) => s,
+                None => return None,
+            };
 
-        let dyno_type = DYNO_TYPE_REGEX.captures(line).and_then(|c| c.at(1)).unwrap();
+        let dyno_type = match DYNO_TYPE_REGEX.captures(line)
+            .and_then(|c| c.at(1)) {
+                Some(d) => d,
+                None => return None,
+            };
 
         let base = format!("dyno.{}", dyno_type);
 
