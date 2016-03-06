@@ -21,7 +21,7 @@ impl BaseStore {
         }
     }
 
-    fn record(&mut self, metrics: Vec<Metric>) {
+    pub fn record(&mut self, metrics: Vec<Metric>) {
         for metric in metrics {
             match metric {
                 Count(name, value) => {
@@ -40,7 +40,7 @@ impl BaseStore {
         }
     } // fn record
 
-    fn flush(&mut self) -> AggregatedMetrics {
+    pub fn flush(&mut self) -> AggregatedMetrics {
         let mut aggregated = AggregatedMetrics::new();
 
         aggregated.aggregate_counts(self.counts.iter());

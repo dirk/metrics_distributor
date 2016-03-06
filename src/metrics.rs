@@ -7,7 +7,7 @@ pub type Seconds = u8;
 pub use self::Metric::*;
 
 /// Metric collected from a collector to be recorded in a store.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Metric {
     Count(String, u64),
     Measure(String, f64),
