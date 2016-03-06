@@ -92,11 +92,12 @@ impl HerokuLogLineReader {
     pub fn parse_status(line: &str) -> Option<Vec<Metric>> {
         let mut metrics: Vec<Metric> = vec![];
 
-        let status = match STATUS_REGEX.captures(line) {
-            Some(captures) => captures.at(1).unwrap(),
-            None => return None,
-        };
-        let status = u16::from_str(status).unwrap();
+        let status = match STATUS_REGEX.captures(line)
+            .and_then(|c| c.at(1))
+            .and_then(|s| u16::from_str(s).ok()) {
+                Some(s) => s,
+                None => return None,
+            };
 
         let service = match SERVICE_REGEX.captures(line)
             .and_then(|c| c.at(1))
@@ -150,12 +151,18 @@ impl HerokuLogLineReader {
 
     /// Parses the `sample#load_avg_1m=` metrics from Heroku logs.
     pub fn parse_load(line: &str) -> Option<Metric> {
-        let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line) {
-            Some(captures) => captures.at(1).and_then(|c| f64::from_str(c).ok()).unwrap(),
-            None => return None,
-        };
+        let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line)
+            .and_then(|c| c.at(1))
+            .and_then(|c| f64::from_str(c).ok()) {
+                Some(l) => l,
+                None => return None,
+            };
 
-        let dyno_type = SOURCE_REGEX.captures(line).and_then(|c| c.at(1)).unwrap();
+        let dyno_type = match SOURCE_REGEX.captures(line)
+            .and_then(|c| c.at(1)) {
+                Some(t) => t,
+                None => return None,
+            };
 
         Some(Measure(format!("dyno.{}.load_avg_1m", dyno_type), load_avg_1m))
     }
