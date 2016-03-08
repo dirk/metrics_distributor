@@ -12,8 +12,8 @@ iron = "0.2.6"
 router = "0.1.0"
 regex = "0.1.55"
 lazy_static = "0.1.15"
-nom = "1.2.0"
-chrono = "0.2.19"
+nom = "1.2.1"
+chrono = "0.2.20"
 rustc-serialize = "0.3.18"
 
 [[example]]
