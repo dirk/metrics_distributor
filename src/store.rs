@@ -5,7 +5,9 @@ use std::time::Duration;
 
 use metrics::*;
 
-/// Internal storage of store data.
+/// Internal storage of metrics data. Normally you will want a `SharedStore`
+/// which wraps this in an `Arc<Mutex<BaseStore>>` for thread-safe sharing
+/// and access.
 pub struct BaseStore {
     counts: HashMap<String, u64>,
     measures: HashMap<String, Vec<f64>>,
@@ -70,16 +72,24 @@ impl SharedStore {
         }
     }
 
+    /// Takes a `Vec` of metrics and stores them.
     pub fn record(&self, metrics: Vec<Metric>) {
         let mut store = self.shared.lock().unwrap();
         store.record(metrics)
     }
 
+    /// Aggregates all the metrics currently in the store and returns an
+    /// `AggregatedMetrics` with the aggregated values for those metrics.
+    /// This will empty the store, so it will not have any metrics in it
+    /// after calling this.
     pub fn flush(&self) -> AggregatedMetrics {
         let mut store = self.shared.lock().unwrap();
         store.flush()
     }
 
+    /// Starts a thread that calls `flush` on itself at a certain rate. After
+    /// flushing it calls the given callback with the aggregated metrics
+    /// that were flushed.
     pub fn flush_every<F>(&self, interval: Duration, callback: F) -> JoinHandle<()>
         where F: Fn(AggregatedMetrics) + Send + 'static {
 

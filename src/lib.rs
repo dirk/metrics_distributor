@@ -19,10 +19,3 @@ pub mod metrics;
 pub mod store;
 
 pub use store::*;
-
-#[cfg(test)]
-mod test {
-    #[test]
-    fn it_works() {
-    }
-}
