@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::thread::{self, sleep, JoinHandle};
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread::{self, sleep};
 use std::time::Duration;
 
 use metrics::*;
@@ -90,21 +90,33 @@ impl SharedStore {
     /// Starts a thread that calls `flush` on itself at a certain rate. After
     /// flushing it calls the given callback with the aggregated metrics
     /// that were flushed.
-    pub fn flush_every<F>(&self, interval: Duration, callback: F) -> JoinHandle<()>
-        where F: Fn(AggregatedMetrics) + Send + 'static {
+    pub fn flush_every<F>(&self, interval: Duration, callback: F)
+        where F: Fn(AggregatedMetrics) + Send + Sync + 'static {
 
         let shared = self.shared.clone();
 
+        let (send, recv) = mpsc::channel();
+
+        // Aggregate and send onto the channel
         thread::spawn(move || {
             loop {
                 sleep(interval);
 
-                let mut store = shared.lock().unwrap();
-                let aggregated = store.flush();
+                let aggregated = {
+                    let mut store = shared.lock().unwrap();
+                    store.flush()
+                };
 
-                callback(aggregated);
+                send.send(aggregated).unwrap()
             }
-        })
+        });
+
+        // Receive aggregated metrics and send them to the callback function
+        thread::spawn(move || {
+            for aggregated in recv {
+                callback(aggregated)
+            }
+        });
     }
 }
 
