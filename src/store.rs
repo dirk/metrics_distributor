@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{mpsc, Arc, Mutex};
-use std::thread::{self, sleep};
+use std::thread::{self, sleep, JoinHandle};
 use std::time::Duration;
 
 use metrics::*;
@@ -90,33 +90,34 @@ impl SharedStore {
     /// Starts a thread that calls `flush` on itself at a certain rate. After
     /// flushing it calls the given callback with the aggregated metrics
     /// that were flushed.
-    pub fn flush_every<F>(&self, interval: Duration, callback: F)
+    pub fn flush_every<F>(&self, interval: Duration, callback: F) -> Vec<JoinHandle<()>>
         where F: Fn(AggregatedMetrics) + Send + 'static {
 
         let shared = self.shared.clone();
 
         let (send, recv) = mpsc::channel();
 
-        // Aggregate and send onto the channel
-        thread::spawn(move || {
-            loop {
-                sleep(interval);
+        vec![
+            // Aggregate and send onto the channel
+            thread::spawn(move || {
+                loop {
+                    sleep(interval);
 
-                let aggregated = {
-                    let mut store = shared.lock().unwrap();
-                    store.flush()
-                };
+                    let aggregated = {
+                        let mut store = shared.lock().unwrap();
+                        store.flush()
+                    };
 
-                send.send(aggregated).unwrap()
-            }
-        });
-
-        // Receive aggregated metrics and send them to the callback function
-        thread::spawn(move || {
-            for aggregated in recv {
-                callback(aggregated)
-            }
-        });
+                    send.send(aggregated).unwrap()
+                }
+            }),
+            // Receive aggregated metrics and send them to the callback function
+            thread::spawn(move || {
+                for aggregated in recv {
+                    callback(aggregated)
+                }
+            })
+        ]
     }
 }
 

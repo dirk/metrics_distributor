@@ -1,6 +1,6 @@
 [package]
 name = "metrics_distributor"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["Dirk Gadsden <dirk@esherido.com>"]
 description = "Ingest logs and forward aggregated data to APIs/services."
 license = "BSD-3-Clause"
