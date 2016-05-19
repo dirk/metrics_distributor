@@ -91,7 +91,7 @@ impl SharedStore {
     /// flushing it calls the given callback with the aggregated metrics
     /// that were flushed.
     pub fn flush_every<F>(&self, interval: Duration, callback: F)
-        where F: Fn(AggregatedMetrics) + Send + Sync + 'static {
+        where F: Fn(AggregatedMetrics) + Send + 'static {
 
         let shared = self.shared.clone();
 
