@@ -77,11 +77,17 @@ impl Forwarder for DatadogForwarder {
 
         let res = self.post(&client, "/v1/series")
             .body(&body)
-            .send()
-            .unwrap();
+            .send();
 
-        if !res.status.is_success() {
-            println!("Datadog API Error: {:#?}", res);
+        match res {
+            Err(err) => {
+                println!("Datadog HTTP Error: {:#?}", err)
+            },
+            Ok(res) => {
+                if !res.status.is_success() {
+                    println!("Datadog API Error: {:#?}", res);
+                }
+            },
         }
     }
 }
