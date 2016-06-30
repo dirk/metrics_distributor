@@ -66,12 +66,14 @@ impl AggregatedMetrics {
             let median       = sorted[sorted.len() / 2]; // TODO: Improve how we calculate the median
             let average      = sorted.iter().fold(0.0, |sum, val| { sum + val }) / (sorted.len() as f64);
             let percentile95 = sorted[(sorted.len() as f64 * 0.95) as usize];
+            let percentile99 = sorted[(sorted.len() as f64 * 0.99) as usize];
 
             self.metrics.push((Measure, format!("{}.min",          name), min));
             self.metrics.push((Measure, format!("{}.max",          name), max));
             self.metrics.push((Measure, format!("{}.median",       name), median));
             self.metrics.push((Measure, format!("{}.avg",          name), average));
             self.metrics.push((Measure, format!("{}.95percentile", name), percentile95));
+            self.metrics.push((Measure, format!("{}.99percentile", name), percentile99));
 
             self.metrics.push((Count,   format!("{}.count", name), sorted.len() as f64));
         }
