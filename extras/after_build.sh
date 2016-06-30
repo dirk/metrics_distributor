@@ -13,9 +13,9 @@ then
   exit 0
 fi
 
-if [[ ! "$RUSTC_VERSION" =~ "1.8.0" ]]
+if [[ ! "$RUSTC_VERSION" =~ "1.9.0" ]]
 then
-  echo "Wrong version of rustc: expected 1.8.0, got $RUSTC_VERSION"
+  echo "Wrong version of rustc: expected 1.9.0, got $RUSTC_VERSION"
   exit 0
 fi
 
