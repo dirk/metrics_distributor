@@ -34,7 +34,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = u64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Count(name.to_owned(), value))
+                metrics.push(Count(Dimension::with_name(name), value))
             }
         }
 
@@ -43,7 +43,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Measure(name.to_owned(), value))
+                metrics.push(Measure(Dimension::with_name(name), value))
             }
         }
 
@@ -52,7 +52,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Sample(name.to_owned(), value))
+                metrics.push(Sample(Dimension::with_name(name), value))
             }
         }
 
@@ -119,12 +119,13 @@ impl HerokuLogLineReader {
 
         // Don't record timing for 499 and 5xx errors
         if !is_500 {
-            let service_time = format!("{}.service_time", base);
-            metrics.push(Measure(service_time.to_owned(), service as f64));
+            let service_time_name = format!("{}.service_time", base);
+            metrics.push(Measure(Dimension::with_name(service_time_name), service as f64));
         }
 
         // Count the status
-        metrics.push(Count(format!("{}.status.{}", base, status).to_owned(), 1));
+        let status_name = format!("{}.status.{}", base, status);
+        metrics.push(Count(Dimension::with_name(status_name), 1));
 
         Some(metrics)
     }
@@ -146,7 +147,8 @@ impl HerokuLogLineReader {
             return None
         }
 
-        Some(Count(format!("heroku.error.{}", code), 1))
+        let name = format!("heroku.error.{}", code);
+        Some(Count(Dimension::with_name(name), 1))
     }
 
     /// Parses the `sample#load_avg_1m=` metrics from Heroku logs.
@@ -164,7 +166,8 @@ impl HerokuLogLineReader {
                 None => return None,
             };
 
-        Some(Measure(format!("dyno.{}.load_avg_1m", dyno_type), load_avg_1m))
+        let name = format!("dyno.{}.load_avg_1m", dyno_type);
+        Some(Measure(Dimension::with_name(name), load_avg_1m))
     }
 }
 
@@ -198,7 +201,7 @@ mod tests {
 
         assert_eq!(
             reader.read(line),
-            vec![ Measure("foo".to_owned(), 1.2) ]
+            vec![ Measure(Dimension::with_name("foo"), 1.2) ]
         )
     }
 
@@ -209,7 +212,7 @@ mod tests {
 
         assert_eq!(
             reader.read(line),
-            vec![ Count("foo".to_owned(), 1) ]
+            vec![ Count(Dimension::with_name("foo"), 1) ]
         )
     }
 
@@ -220,7 +223,7 @@ mod tests {
 
         assert_eq!(
             reader.read(line),
-            vec![ Sample("bar".to_owned(), 3.4) ]
+            vec![ Sample(Dimension::with_name("bar"), 3.4) ]
         )
     }
 
@@ -242,7 +245,7 @@ mod tests {
 
         assert_eq!(
             reader.read(line),
-            vec![ Measure("dyno.web.load_avg_1m".to_owned(), 0.56) ]
+            vec![ Measure(Dimension::with_name("dyno.web.load_avg_1m"), 0.56) ]
         )
     }
 
@@ -254,8 +257,8 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Count("dyno.web.status.503".to_owned(), 1),
-                Count("heroku.error.H18".to_owned(), 1),
+                Count(Dimension::with_name("dyno.web.status.503"), 1),
+                Count(Dimension::with_name("heroku.error.H18"), 1),
             ]
         )
     }
@@ -268,7 +271,7 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Count("heroku.error.R14".to_owned(), 1),
+                Count(Dimension::with_name("heroku.error.R14"), 1),
             ]
         )
     }
@@ -281,8 +284,8 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Measure("dyno.web.service_time".to_owned(), 39.0),
-                Count("dyno.web.status.200".to_owned(), 1),
+                Measure(Dimension::with_name("dyno.web.service_time"), 39.0),
+                Count(Dimension::with_name("dyno.web.status.200"), 1),
             ]
         )
     }

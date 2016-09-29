@@ -8,14 +8,14 @@ pub use self::Metric::*;
 /// Metric collected from a collector to be recorded in a store.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metric {
-    Count(String, u64),
-    Measure(String, f64),
-    Sample(String, f64),
+    Count(Dimension, u64),
+    Measure(Dimension, f64),
+    Sample(Dimension, f64),
 }
 
 /// Metrics can grouped by multiple values. Right now that limited to just
 /// their name.
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Dimension {
     pub name: String,
 }

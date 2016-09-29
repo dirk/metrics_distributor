@@ -26,16 +26,16 @@ impl BaseStore {
     pub fn record(&mut self, metrics: Vec<Metric>) {
         for metric in metrics {
             match metric {
-                Count(name, value) => {
-                    let count = self.counts.entry(Dimension::with_name(name)).or_insert(0);
+                Count(dim, value) => {
+                    let count = self.counts.entry(dim).or_insert(0);
                     *count += value;
                 },
-                Measure(name, value) => {
-                    let values = self.measures.entry(Dimension::with_name(name)).or_insert(Vec::new());
+                Measure(dim, value) => {
+                    let values = self.measures.entry(dim).or_insert(Vec::new());
                     values.push(value);
                 },
-                Sample(name, value) => {
-                    let entry = self.samples.entry(Dimension::with_name(name)).or_insert(0.0);
+                Sample(dim, value) => {
+                    let entry = self.samples.entry(dim).or_insert(0.0);
                     *entry = value;
                 }
             }
@@ -130,12 +130,12 @@ mod tests {
 
     fn get_store_with_metrics() -> BaseStore {
         let metrics = vec![
-            Count("foo".to_owned(), 1),
-            Count("foo".to_owned(), 2),
-            Measure("bar".to_owned(), 3.4),
-            Measure("bar".to_owned(), 5.6),
-            Sample("baz".to_owned(), 7.8),
-            Sample("baz".to_owned(), 9.0),
+            Count(Dimension::with_name("foo"), 1),
+            Count(Dimension::with_name("foo"), 2),
+            Measure(Dimension::with_name("bar"), 3.4),
+            Measure(Dimension::with_name("bar"), 5.6),
+            Sample(Dimension::with_name("baz"), 7.8),
+            Sample(Dimension::with_name("baz"), 9.0),
         ];
 
         let mut store = BaseStore::new();
