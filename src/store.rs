@@ -45,13 +45,13 @@ impl BaseStore {
     pub fn flush(&mut self) -> AggregatedMetrics {
         let mut aggregated = AggregatedMetrics::new();
 
-        aggregated.aggregate_counts(self.counts.iter().map(|(d, v)| (d.name.as_str(), v)));
+        aggregated.aggregate_counts(self.counts.iter());
         self.counts.clear();
 
-        aggregated.aggregate_measures(self.measures.iter().map(|(d, v)| (d.name.as_str(), v)));
+        aggregated.aggregate_measures(self.measures.iter());
         self.measures.clear();
 
-        aggregated.aggregate_samples(self.samples.iter().map(|(d, v)| (d.name.as_str(), v)));
+        aggregated.aggregate_samples(self.samples.iter());
         self.samples.clear();
 
         aggregated
