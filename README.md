@@ -35,6 +35,16 @@ They can then **forward** aggregated metrics over a number of protocols:
 [Graphite]: https://graphite.readthedocs.org/en/latest/feeding-carbon.html
 [`DatadogForwarder`]: https://dirk.github.io/metrics_distributor/metrics_distributor/forwarders/datadog/struct.DatadogForwarder.html
 
+## Building on macOS
+
+The system OpenSSL on macOS is too outdated. To use the one installed by Homebrew, run the following commands before building:
+
+```sh
+export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
+export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
+export DEP_OPENSSL_INCLUDE=`brew --prefix openssl`/include
+```
+
 ### Configuration
 
 Distributor uses code as configuration. Rather than parsing a configuration format, you configure your service by composing collectors and forwarders. This means you get the added advantage of the powerful Rust compiler checking your "configuration" for correctness and that it's very easy to customize or create entirely new collections/forwarders.
