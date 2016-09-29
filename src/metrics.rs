@@ -1,4 +1,3 @@
-use std::collections::hash_map;
 use std::slice::Iter;
 use std::cmp::Ordering::Equal;
 
@@ -44,7 +43,9 @@ impl AggregatedMetrics {
         }
     }
 
-    pub fn aggregate_counts(&mut self, counts: hash_map::Iter<String, u64>) {
+    pub fn aggregate_counts<'a, I>(&mut self, counts: I)
+        where I: Iterator<Item=(&'a str, &'a u64)>
+    {
         for (name, value) in counts {
             self.metrics.push((AggregatedMetricType::Count, name.to_owned(), *value as f64))
         }
@@ -54,7 +55,9 @@ impl AggregatedMetrics {
     /// average (mean), and 95th percentile summary measures will all be
     /// emitted, as well as a total count of all the individual measures
     /// received in the period.
-    pub fn aggregate_measures(&mut self, measures: hash_map::Iter<String, Vec<f64>>) {
+    pub fn aggregate_measures<'a, I>(&mut self, measures: I)
+        where I: Iterator<Item=(&'a str, &'a Vec<f64>)>
+    {
         use self::AggregatedMetricType::*;
 
         for (name, values) in measures {
@@ -79,7 +82,9 @@ impl AggregatedMetrics {
         }
     }
 
-    pub fn aggregate_samples(&mut self, samples: hash_map::Iter<String, f64>) {
+    pub fn aggregate_samples<'a, I>(&mut self, samples: I)
+        where I: Iterator<Item=(&'a str, &'a f64)>
+    {
         for (name, value) in samples {
             self.metrics.push((AggregatedMetricType::Sample, name.to_owned(), *value as f64))
         }

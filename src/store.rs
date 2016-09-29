@@ -5,13 +5,28 @@ use std::time::Duration;
 
 use metrics::*;
 
+/// Metrics can grouped by multiple values. Right now that limited to just
+/// their name.
+#[derive(Debug, Eq, PartialEq, Hash)]
+struct Dimension {
+    name: String,
+}
+
+impl Dimension {
+    pub fn with_name<S: AsRef<str>>(name: S) -> Dimension {
+        Dimension {
+            name: name.as_ref().to_owned(),
+        }
+    }
+}
+
 /// Internal storage of metrics data. Normally you will want a `SharedStore`
 /// which wraps this in an `Arc<Mutex<BaseStore>>` for thread-safe sharing
 /// and access.
 pub struct BaseStore {
-    counts: HashMap<String, u64>,
-    measures: HashMap<String, Vec<f64>>,
-    samples: HashMap<String, f64>,
+    counts: HashMap<Dimension, u64>,
+    measures: HashMap<Dimension, Vec<f64>>,
+    samples: HashMap<Dimension, f64>,
 }
 
 impl BaseStore {
@@ -27,15 +42,15 @@ impl BaseStore {
         for metric in metrics {
             match metric {
                 Count(name, value) => {
-                    let count = self.counts.entry(name).or_insert(0);
+                    let count = self.counts.entry(Dimension::with_name(name)).or_insert(0);
                     *count += value;
                 },
                 Measure(name, value) => {
-                    let values = self.measures.entry(name).or_insert(Vec::new());
+                    let values = self.measures.entry(Dimension::with_name(name)).or_insert(Vec::new());
                     values.push(value);
                 },
                 Sample(name, value) => {
-                    let entry = self.samples.entry(name).or_insert(0.0);
+                    let entry = self.samples.entry(Dimension::with_name(name)).or_insert(0.0);
                     *entry = value;
                 }
             }
@@ -45,13 +60,13 @@ impl BaseStore {
     pub fn flush(&mut self) -> AggregatedMetrics {
         let mut aggregated = AggregatedMetrics::new();
 
-        aggregated.aggregate_counts(self.counts.iter());
+        aggregated.aggregate_counts(self.counts.iter().map(|(d, v)| (d.name.as_str(), v)));
         self.counts.clear();
 
-        aggregated.aggregate_measures(self.measures.iter());
+        aggregated.aggregate_measures(self.measures.iter().map(|(d, v)| (d.name.as_str(), v)));
         self.measures.clear();
 
-        aggregated.aggregate_samples(self.samples.iter());
+        aggregated.aggregate_samples(self.samples.iter().map(|(d, v)| (d.name.as_str(), v)));
         self.samples.clear();
 
         aggregated
@@ -125,7 +140,7 @@ impl SharedStore {
 mod tests {
     use std::collections::HashMap;
 
-    use super::BaseStore;
+    use super::{BaseStore, Dimension};
     use super::super::metrics::*;
 
     fn get_store_with_metrics() -> BaseStore {
@@ -150,7 +165,7 @@ mod tests {
         let store = get_store_with_metrics();
 
         let mut expected_counts = HashMap::new();
-        expected_counts.insert("foo".to_owned(), 3);
+        expected_counts.insert(Dimension::with_name("foo"), 3);
 
         assert_eq!(store.counts, expected_counts)
     }
@@ -159,8 +174,8 @@ mod tests {
     fn it_records_measure() {
         let store = get_store_with_metrics();
 
-        let mut expected_measures: HashMap<String, Vec<f64>> = HashMap::new();
-        expected_measures.insert("bar".to_owned(), vec![3.4, 5.6]);
+        let mut expected_measures = HashMap::new();
+        expected_measures.insert(Dimension::with_name("bar"), vec![3.4, 5.6]);
 
         assert_eq!(store.measures, expected_measures)
     }
@@ -170,7 +185,7 @@ mod tests {
         let store = get_store_with_metrics();
 
         let mut expected_samples = HashMap::new();
-        expected_samples.insert("baz".to_owned(), 9.0);
+        expected_samples.insert(Dimension::with_name("baz"), 9.0);
 
         assert_eq!(store.samples, expected_samples)
     }
