@@ -13,6 +13,21 @@ pub enum Metric {
     Sample(String, f64),
 }
 
+/// Metrics can grouped by multiple values. Right now that limited to just
+/// their name.
+#[derive(Debug, Eq, PartialEq, Hash)]
+pub struct Dimension {
+    pub name: String,
+}
+
+impl Dimension {
+    pub fn with_name<S: AsRef<str>>(name: S) -> Dimension {
+        Dimension {
+            name: name.as_ref().to_owned(),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum AggregatedMetricType {
     Count,

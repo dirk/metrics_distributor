@@ -5,21 +5,6 @@ use std::time::Duration;
 
 use metrics::*;
 
-/// Metrics can grouped by multiple values. Right now that limited to just
-/// their name.
-#[derive(Debug, Eq, PartialEq, Hash)]
-struct Dimension {
-    name: String,
-}
-
-impl Dimension {
-    pub fn with_name<S: AsRef<str>>(name: S) -> Dimension {
-        Dimension {
-            name: name.as_ref().to_owned(),
-        }
-    }
-}
-
 /// Internal storage of metrics data. Normally you will want a `SharedStore`
 /// which wraps this in an `Arc<Mutex<BaseStore>>` for thread-safe sharing
 /// and access.
@@ -140,7 +125,7 @@ impl SharedStore {
 mod tests {
     use std::collections::HashMap;
 
-    use super::{BaseStore, Dimension};
+    use super::BaseStore;
     use super::super::metrics::*;
 
     fn get_store_with_metrics() -> BaseStore {
