@@ -18,12 +18,21 @@ pub enum Metric {
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Dimension {
     pub name: String,
+    pub source: Option<String>,
 }
 
 impl Dimension {
     pub fn with_name<S: AsRef<str>>(name: S) -> Dimension {
         Dimension {
             name: name.as_ref().to_owned(),
+            source: None,
+        }
+    }
+
+    pub fn with_name_and_source<S: AsRef<str>>(name: S, source: S) -> Dimension {
+        Dimension {
+            name: name.as_ref().to_owned(),
+            source: Some(source.as_ref().to_owned()),
         }
     }
 }
