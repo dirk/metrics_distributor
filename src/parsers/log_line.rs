@@ -83,7 +83,7 @@ lazy_static! {
         Regex::new(r"sample#load_avg_1m=([0-9.]+)").unwrap();
 
     static ref SOURCE_REGEX: Regex =
-        Regex::new(r"source=(\w+).(\d+)").unwrap();
+        Regex::new(r"source=([\w.]+)").unwrap();
 }
 
 impl HerokuLogLineReader {
@@ -154,17 +154,22 @@ impl HerokuLogLineReader {
     /// Parses the `sample#load_avg_1m=` metrics from Heroku logs.
     pub fn parse_load(line: &str) -> Option<Metric> {
         let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line)
-            .and_then(|c| c.at(1))
-            .and_then(|c| f64::from_str(c).ok()) {
-                Some(l) => l,
-                None => return None,
-            };
+                                                 .and_then(|c| c.at(1))
+                                                 .and_then(|c| f64::from_str(c).ok()) {
+            Some(l) => l,
+            None => return None,
+        };
 
-        let dyno_type = match SOURCE_REGEX.captures(line)
-            .and_then(|c| c.at(1)) {
-                Some(t) => t,
-                None => return None,
-            };
+        let source = match SOURCE_REGEX.captures(line)
+                                       .and_then(|c| c.at(1)) {
+            Some(t) => t,
+            None => return None,
+        };
+
+        let dyno_type = match source.split('.').nth(0) {
+            Some(s) => s,
+            None => return None,
+        };
 
         let name = format!("dyno.{}.load_avg_1m", dyno_type);
         Some(Measure(Dimension::with_name(name), load_avg_1m))
