@@ -37,7 +37,7 @@ impl DatadogForwarder {
             .map(|metric| {
                 let mut object: BTreeMap<String, Json> = BTreeMap::new();
 
-                let (ref metric_type, ref name, ref value) = *metric;
+                let (ref metric_type, ref dim, ref value) = *metric;
 
                 let api_type = match *metric_type {
                     Count   => "count",
@@ -45,7 +45,7 @@ impl DatadogForwarder {
                     Sample  => "gauge",
                 };
 
-                object.insert("metric".to_owned(), name.to_json());
+                object.insert("metric".to_owned(), dim.name.to_json());
                 object.insert("type".to_owned(), api_type.to_json());
                 object.insert("points".to_owned(), Json::Array(vec![
                     Json::Array(vec![ timestamp.to_json(), value.to_json() ]),

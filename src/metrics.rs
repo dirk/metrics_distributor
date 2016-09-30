@@ -35,6 +35,15 @@ impl Dimension {
             source: Some(source.as_ref().to_owned()),
         }
     }
+
+    /// Returns a new `Dimension` with the given name; all other fields will
+    /// be copied over.
+    pub fn renamed<S: AsRef<str>>(&self, name: S) -> Dimension {
+        Dimension {
+            name: name.as_ref().to_owned(),
+            source: self.source.clone(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -45,7 +54,7 @@ pub enum AggregatedMetricType {
 }
 
 /// The final value resulting from aggregating a metric's values.
-pub type AggregatedMetric = (AggregatedMetricType, String, f64);
+pub type AggregatedMetric = (AggregatedMetricType, Dimension, f64);
 
 /// All the metrics in a given time interval coalesced into a single value for
 /// each metric.
@@ -71,7 +80,7 @@ impl AggregatedMetrics {
         where I: Iterator<Item=(&'a Dimension, &'a u64)>
     {
         for (dim, value) in counts {
-            self.metrics.push((AggregatedMetricType::Count, dim.name.to_owned(), *value as f64))
+            self.metrics.push((AggregatedMetricType::Count, dim.to_owned(), *value as f64))
         }
     }
 
@@ -95,14 +104,14 @@ impl AggregatedMetrics {
             let percentile95 = sorted[(sorted.len() as f64 * 0.95) as usize];
             let percentile99 = sorted[(sorted.len() as f64 * 0.99) as usize];
 
-            self.metrics.push((Measure, format!("{}.min",          dim.name), min));
-            self.metrics.push((Measure, format!("{}.max",          dim.name), max));
-            self.metrics.push((Measure, format!("{}.median",       dim.name), median));
-            self.metrics.push((Measure, format!("{}.avg",          dim.name), average));
-            self.metrics.push((Measure, format!("{}.95percentile", dim.name), percentile95));
-            self.metrics.push((Measure, format!("{}.99percentile", dim.name), percentile99));
+            self.metrics.push((Measure, dim.renamed(format!("{}.min",          dim.name)), min));
+            self.metrics.push((Measure, dim.renamed(format!("{}.max",          dim.name)), max));
+            self.metrics.push((Measure, dim.renamed(format!("{}.median",       dim.name)), median));
+            self.metrics.push((Measure, dim.renamed(format!("{}.avg",          dim.name)), average));
+            self.metrics.push((Measure, dim.renamed(format!("{}.95percentile", dim.name)), percentile95));
+            self.metrics.push((Measure, dim.renamed(format!("{}.99percentile", dim.name)), percentile99));
 
-            self.metrics.push((Count,   format!("{}.count", dim.name), sorted.len() as f64));
+            self.metrics.push((Count,   dim.renamed(format!("{}.count", dim.name)), sorted.len() as f64));
         }
     }
 
@@ -110,7 +119,7 @@ impl AggregatedMetrics {
         where I: Iterator<Item=(&'a Dimension, &'a f64)>
     {
         for (dim, value) in samples {
-            self.metrics.push((AggregatedMetricType::Sample, dim.name.to_owned(), *value as f64))
+            self.metrics.push((AggregatedMetricType::Sample, dim.to_owned(), *value as f64))
         }
     }
 
