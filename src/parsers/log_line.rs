@@ -23,6 +23,16 @@ lazy_static! {
 
     static ref LOG_COUNT_REGEX: Regex =
         Regex::new(r"count#([a-zA-Z0-9._]+)=(\d+)").unwrap();
+
+    static ref SOURCE_REGEX: Regex =
+        Regex::new(r"source=([\w.]+)").unwrap();
+}
+
+impl StandardLogLineReader {
+    fn parse_source<'a>(line: &'a str) -> Option<&'a str> {
+        SOURCE_REGEX.captures(line)
+                    .and_then(|c| c.at(1))
+    }
 }
 
 impl LogLineReader for StandardLogLineReader {
@@ -81,9 +91,6 @@ lazy_static! {
 
     static ref LOAD_AVG_1M_REGEX: Regex =
         Regex::new(r"sample#load_avg_1m=([0-9.]+)").unwrap();
-
-    static ref SOURCE_REGEX: Regex =
-        Regex::new(r"source=([\w.]+)").unwrap();
 }
 
 impl HerokuLogLineReader {
@@ -160,9 +167,8 @@ impl HerokuLogLineReader {
             None => return None,
         };
 
-        let source = match SOURCE_REGEX.captures(line)
-                                       .and_then(|c| c.at(1)) {
-            Some(t) => t,
+        let source = match StandardLogLineReader::parse_source(line) {
+            Some(s) => s,
             None => return None,
         };
 
@@ -171,8 +177,8 @@ impl HerokuLogLineReader {
             None => return None,
         };
 
-        let name = format!("dyno.{}.load_avg_1m", dyno_type);
-        Some(Measure(Dimension::with_name(name), load_avg_1m))
+        let dim = Dimension::with_name_and_source(format!("dyno.{}.load_avg_1m", dyno_type), source);
+        Some(Measure(dim, load_avg_1m))
     }
 }
 
@@ -244,13 +250,23 @@ mod tests {
     }
 
     #[test]
+    fn standard_reader_parses_source() {
+        let line = "source=something metric#other=5.6\n";
+
+        assert_eq!(
+            StandardLogLineReader::parse_source(line),
+            Some("something")
+        )
+    }
+
+    #[test]
     fn heroku_reader_reads_loads() {
         let reader = HerokuLogLineReader;
         let line = "2016-02-26 21:34:59.429615+00:00 heroku web.2 - - source=web.2 dyno=heroku.123.XYZ sample#load_avg_1m=0.56 sample#load_avg_5m=0.26 sample#load_avg_15m=0.17\n";
 
         assert_eq!(
             reader.read(line),
-            vec![ Measure(Dimension::with_name("dyno.web.load_avg_1m"), 0.56) ]
+            vec![ Measure(Dimension::with_name_and_source("dyno.web.load_avg_1m", "web.2"), 0.56) ]
         )
     }
 
