@@ -29,7 +29,7 @@ impl Dimension {
         }
     }
 
-    pub fn with_name_and_source<S: AsRef<str>>(name: S, source: S) -> Dimension {
+    pub fn with_name_and_source<N: AsRef<str>, S: AsRef<str>>(name: N, source: S) -> Dimension {
         Dimension {
             name: name.as_ref().to_owned(),
             source: Some(source.as_ref().to_owned()),
