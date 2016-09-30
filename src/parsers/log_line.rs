@@ -37,6 +37,11 @@ impl StandardLogLineReader {
 
 impl LogLineReader for StandardLogLineReader {
     fn read(&self, line: &str) -> Vec<Metric> {
+        let source = StandardLogLineReader::parse_source(line).map(|s| s.to_owned());
+        let dimension = |name: &str| {
+            Dimension { name: name.to_owned(), source: source.clone() }
+        };
+
         let mut metrics = vec![];
 
         // Look for counts
@@ -44,7 +49,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = u64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Count(Dimension::with_name(name), value))
+                metrics.push(Count(dimension(name), value))
             }
         }
 
@@ -53,7 +58,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Measure(Dimension::with_name(name), value))
+                metrics.push(Measure(dimension(name), value))
             }
         }
 
@@ -62,7 +67,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Sample(Dimension::with_name(name), value))
+                metrics.push(Sample(dimension(name), value))
             }
         }
 
@@ -127,12 +132,12 @@ impl HerokuLogLineReader {
         // Don't record timing for 499 and 5xx errors
         if !is_500 {
             let service_time_name = format!("{}.service_time", base);
-            metrics.push(Measure(Dimension::with_name(service_time_name), service as f64));
+            metrics.push(Measure(Dimension::with_name_and_source(service_time_name, dyno_type), service as f64));
         }
 
         // Count the status
         let status_name = format!("{}.status.{}", base, status);
-        metrics.push(Count(Dimension::with_name(status_name), 1));
+        metrics.push(Count(Dimension::with_name_and_source(status_name, dyno_type), 1));
 
         Some(metrics)
     }
@@ -217,6 +222,17 @@ mod tests {
     }
 
     #[test]
+    fn standard_reader_reads_measure_with_source() {
+        let reader = StandardLogLineReader;
+        let line = "source=web measure#foo=1.2\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![ Measure(Dimension::with_name_and_source("foo", "web"), 1.2) ]
+        )
+    }
+
+    #[test]
     fn standard_reader_reads_count() {
         let reader = StandardLogLineReader;
         let line = "count#foo=1\n";
@@ -278,7 +294,7 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Count(Dimension::with_name("dyno.web.status.503"), 1),
+                Count(Dimension::with_name_and_source("dyno.web.status.503", "web"), 1),
                 Count(Dimension::with_name("heroku.error.H18"), 1),
             ]
         )
@@ -305,8 +321,8 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Measure(Dimension::with_name("dyno.web.service_time"), 39.0),
-                Count(Dimension::with_name("dyno.web.status.200"), 1),
+                Measure(Dimension::with_name_and_source("dyno.web.service_time", "web"), 39.0),
+                Count(Dimension::with_name_and_source("dyno.web.status.200", "web"), 1),
             ]
         )
     }
