@@ -98,6 +98,7 @@ mod tests {
     use super::super::super::metrics::{
         AggregatedMetrics,
         AggregatedMetricType,
+        Dimension,
     };
 
     use rustc_serialize::json::ToJson;
@@ -105,7 +106,7 @@ mod tests {
     #[test]
     fn datadog_forwarder_serializes_metrics() {
         let metrics = AggregatedMetrics::with_metrics(vec![
-            (AggregatedMetricType::Count, "test_count".to_owned(), 1.0),
+            (AggregatedMetricType::Count, Dimension::with_name("test_count"), 1.0),
         ]);
         let json = DatadogForwarder::serialize_metrics(metrics);
 
