@@ -16,7 +16,7 @@ fn main() {
     ]);
 
     let mut router = Router::new();
-    router.post("/logs/drain", log_drain);
+    router.post("/logs/drain", log_drain, "log_drain");
 
     Iron::new(router).http("localhost:3000").unwrap();
 }
