@@ -9,9 +9,9 @@ use metrics::*;
 /// which wraps this in an `Arc<Mutex<BaseStore>>` for thread-safe sharing
 /// and access.
 pub struct BaseStore {
-    counts: HashMap<String, u64>,
-    measures: HashMap<String, Vec<f64>>,
-    samples: HashMap<String, f64>,
+    counts: HashMap<Dimension, u64>,
+    measures: HashMap<Dimension, Vec<f64>>,
+    samples: HashMap<Dimension, f64>,
 }
 
 impl BaseStore {
@@ -26,16 +26,16 @@ impl BaseStore {
     pub fn record(&mut self, metrics: Vec<Metric>) {
         for metric in metrics {
             match metric {
-                Count(name, value) => {
-                    let count = self.counts.entry(name).or_insert(0);
+                Count(dim, value) => {
+                    let count = self.counts.entry(dim).or_insert(0);
                     *count += value;
                 },
-                Measure(name, value) => {
-                    let values = self.measures.entry(name).or_insert(Vec::new());
+                Measure(dim, value) => {
+                    let values = self.measures.entry(dim).or_insert(Vec::new());
                     values.push(value);
                 },
-                Sample(name, value) => {
-                    let entry = self.samples.entry(name).or_insert(0.0);
+                Sample(dim, value) => {
+                    let entry = self.samples.entry(dim).or_insert(0.0);
                     *entry = value;
                 }
             }
@@ -130,12 +130,12 @@ mod tests {
 
     fn get_store_with_metrics() -> BaseStore {
         let metrics = vec![
-            Count("foo".to_owned(), 1),
-            Count("foo".to_owned(), 2),
-            Measure("bar".to_owned(), 3.4),
-            Measure("bar".to_owned(), 5.6),
-            Sample("baz".to_owned(), 7.8),
-            Sample("baz".to_owned(), 9.0),
+            Count(Dimension::with_name("foo"), 1),
+            Count(Dimension::with_name("foo"), 2),
+            Measure(Dimension::with_name("bar"), 3.4),
+            Measure(Dimension::with_name("bar"), 5.6),
+            Sample(Dimension::with_name("baz"), 7.8),
+            Sample(Dimension::with_name("baz"), 9.0),
         ];
 
         let mut store = BaseStore::new();
@@ -150,7 +150,7 @@ mod tests {
         let store = get_store_with_metrics();
 
         let mut expected_counts = HashMap::new();
-        expected_counts.insert("foo".to_owned(), 3);
+        expected_counts.insert(Dimension::with_name("foo"), 3);
 
         assert_eq!(store.counts, expected_counts)
     }
@@ -159,8 +159,8 @@ mod tests {
     fn it_records_measure() {
         let store = get_store_with_metrics();
 
-        let mut expected_measures: HashMap<String, Vec<f64>> = HashMap::new();
-        expected_measures.insert("bar".to_owned(), vec![3.4, 5.6]);
+        let mut expected_measures = HashMap::new();
+        expected_measures.insert(Dimension::with_name("bar"), vec![3.4, 5.6]);
 
         assert_eq!(store.measures, expected_measures)
     }
@@ -170,7 +170,7 @@ mod tests {
         let store = get_store_with_metrics();
 
         let mut expected_samples = HashMap::new();
-        expected_samples.insert("baz".to_owned(), 9.0);
+        expected_samples.insert(Dimension::with_name("baz"), 9.0);
 
         assert_eq!(store.samples, expected_samples)
     }

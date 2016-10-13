@@ -23,10 +23,25 @@ lazy_static! {
 
     static ref LOG_COUNT_REGEX: Regex =
         Regex::new(r"count#([a-zA-Z0-9._]+)=(\d+)").unwrap();
+
+    static ref SOURCE_REGEX: Regex =
+        Regex::new(r"source=([\w.]+)").unwrap();
+}
+
+impl StandardLogLineReader {
+    fn parse_source<'a>(line: &'a str) -> Option<&'a str> {
+        SOURCE_REGEX.captures(line)
+                    .and_then(|c| c.at(1))
+    }
 }
 
 impl LogLineReader for StandardLogLineReader {
     fn read(&self, line: &str) -> Vec<Metric> {
+        let source = StandardLogLineReader::parse_source(line).map(|s| s.to_owned());
+        let dimension = |name: &str| {
+            Dimension { name: name.to_owned(), source: source.clone() }
+        };
+
         let mut metrics = vec![];
 
         // Look for counts
@@ -34,7 +49,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = u64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Count(name.to_owned(), value))
+                metrics.push(Count(dimension(name), value))
             }
         }
 
@@ -43,7 +58,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Measure(name.to_owned(), value))
+                metrics.push(Measure(dimension(name), value))
             }
         }
 
@@ -52,7 +67,7 @@ impl LogLineReader for StandardLogLineReader {
             let name = cap.at(1).unwrap();
 
             if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
-                metrics.push(Sample(name.to_owned(), value))
+                metrics.push(Sample(dimension(name), value))
             }
         }
 
@@ -81,9 +96,6 @@ lazy_static! {
 
     static ref LOAD_AVG_1M_REGEX: Regex =
         Regex::new(r"sample#load_avg_1m=([0-9.]+)").unwrap();
-
-    static ref SOURCE_REGEX: Regex =
-        Regex::new(r"source=(\w+).(\d+)").unwrap();
 }
 
 impl HerokuLogLineReader {
@@ -119,12 +131,13 @@ impl HerokuLogLineReader {
 
         // Don't record timing for 499 and 5xx errors
         if !is_500 {
-            let service_time = format!("{}.service_time", base);
-            metrics.push(Measure(service_time.to_owned(), service as f64));
+            let service_time_name = format!("{}.service_time", base);
+            metrics.push(Measure(Dimension::with_name_and_source(service_time_name, dyno_type), service as f64));
         }
 
         // Count the status
-        metrics.push(Count(format!("{}.status.{}", base, status).to_owned(), 1));
+        let status_name = format!("{}.status.{}", base, status);
+        metrics.push(Count(Dimension::with_name_and_source(status_name, dyno_type), 1));
 
         Some(metrics)
     }
@@ -146,25 +159,31 @@ impl HerokuLogLineReader {
             return None
         }
 
-        Some(Count(format!("heroku.error.{}", code), 1))
+        let name = format!("heroku.error.{}", code);
+        Some(Count(Dimension::with_name(name), 1))
     }
 
     /// Parses the `sample#load_avg_1m=` metrics from Heroku logs.
     pub fn parse_load(line: &str) -> Option<Metric> {
         let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line)
-            .and_then(|c| c.at(1))
-            .and_then(|c| f64::from_str(c).ok()) {
-                Some(l) => l,
-                None => return None,
-            };
+                                                 .and_then(|c| c.at(1))
+                                                 .and_then(|c| f64::from_str(c).ok()) {
+            Some(l) => l,
+            None => return None,
+        };
 
-        let dyno_type = match SOURCE_REGEX.captures(line)
-            .and_then(|c| c.at(1)) {
-                Some(t) => t,
-                None => return None,
-            };
+        let source = match StandardLogLineReader::parse_source(line) {
+            Some(s) => s,
+            None => return None,
+        };
 
-        Some(Measure(format!("dyno.{}.load_avg_1m", dyno_type), load_avg_1m))
+        let dyno_type = match source.split('.').nth(0) {
+            Some(s) => s,
+            None => return None,
+        };
+
+        let dim = Dimension::with_name_and_source(format!("dyno.{}.load_avg_1m", dyno_type), source);
+        Some(Measure(dim, load_avg_1m))
     }
 }
 
@@ -198,7 +217,18 @@ mod tests {
 
         assert_eq!(
             reader.read(line),
-            vec![ Measure("foo".to_owned(), 1.2) ]
+            vec![ Measure(Dimension::with_name("foo"), 1.2) ]
+        )
+    }
+
+    #[test]
+    fn standard_reader_reads_measure_with_source() {
+        let reader = StandardLogLineReader;
+        let line = "source=web measure#foo=1.2\n";
+
+        assert_eq!(
+            reader.read(line),
+            vec![ Measure(Dimension::with_name_and_source("foo", "web"), 1.2) ]
         )
     }
 
@@ -209,7 +239,7 @@ mod tests {
 
         assert_eq!(
             reader.read(line),
-            vec![ Count("foo".to_owned(), 1) ]
+            vec![ Count(Dimension::with_name("foo"), 1) ]
         )
     }
 
@@ -220,7 +250,7 @@ mod tests {
 
         assert_eq!(
             reader.read(line),
-            vec![ Sample("bar".to_owned(), 3.4) ]
+            vec![ Sample(Dimension::with_name("bar"), 3.4) ]
         )
     }
 
@@ -236,13 +266,23 @@ mod tests {
     }
 
     #[test]
+    fn standard_reader_parses_source() {
+        let line = "source=something metric#other=5.6\n";
+
+        assert_eq!(
+            StandardLogLineReader::parse_source(line),
+            Some("something")
+        )
+    }
+
+    #[test]
     fn heroku_reader_reads_loads() {
         let reader = HerokuLogLineReader;
         let line = "2016-02-26 21:34:59.429615+00:00 heroku web.2 - - source=web.2 dyno=heroku.123.XYZ sample#load_avg_1m=0.56 sample#load_avg_5m=0.26 sample#load_avg_15m=0.17\n";
 
         assert_eq!(
             reader.read(line),
-            vec![ Measure("dyno.web.load_avg_1m".to_owned(), 0.56) ]
+            vec![ Measure(Dimension::with_name_and_source("dyno.web.load_avg_1m", "web.2"), 0.56) ]
         )
     }
 
@@ -254,8 +294,8 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Count("dyno.web.status.503".to_owned(), 1),
-                Count("heroku.error.H18".to_owned(), 1),
+                Count(Dimension::with_name_and_source("dyno.web.status.503", "web"), 1),
+                Count(Dimension::with_name("heroku.error.H18"), 1),
             ]
         )
     }
@@ -268,7 +308,7 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Count("heroku.error.R14".to_owned(), 1),
+                Count(Dimension::with_name("heroku.error.R14"), 1),
             ]
         )
     }
@@ -281,8 +321,8 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
-                Measure("dyno.web.service_time".to_owned(), 39.0),
-                Count("dyno.web.status.200".to_owned(), 1),
+                Measure(Dimension::with_name_and_source("dyno.web.service_time", "web"), 39.0),
+                Count(Dimension::with_name_and_source("dyno.web.status.200", "web"), 1),
             ]
         )
     }

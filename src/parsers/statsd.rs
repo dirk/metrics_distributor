@@ -10,7 +10,7 @@ use nom::{
     IResult
 };
 
-use super::super::metrics::Metric;
+use super::super::metrics::{Dimension, Metric};
 
 /// Parsed StatsD metric.
 ///
@@ -27,9 +27,9 @@ impl ParsedMetric {
         use self::ParsedMetric::*;
 
         match self {
-            &Counter(ref name, value) => Metric::Count(name.clone(), value),
-            &Gauge(ref name, value)   => Metric::Sample(name.clone(), value as f64),
-            &Timer(ref name, value)   => Metric::Measure(name.clone(), value as f64),
+            &Counter(ref name, value) => Metric::Count(Dimension::with_name(name), value),
+            &Gauge(ref name, value)   => Metric::Sample(Dimension::with_name(name), value as f64),
+            &Timer(ref name, value)   => Metric::Measure(Dimension::with_name(name), value as f64),
         }
     }
 }

@@ -1,4 +1,3 @@
-use std::collections::hash_map;
 use std::slice::Iter;
 use std::cmp::Ordering::Equal;
 
@@ -9,9 +8,42 @@ pub use self::Metric::*;
 /// Metric collected from a collector to be recorded in a store.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Metric {
-    Count(String, u64),
-    Measure(String, f64),
-    Sample(String, f64),
+    Count(Dimension, u64),
+    Measure(Dimension, f64),
+    Sample(Dimension, f64),
+}
+
+/// Metrics can grouped by multiple values. Right now that limited to just
+/// their name.
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct Dimension {
+    pub name: String,
+    pub source: Option<String>,
+}
+
+impl Dimension {
+    pub fn with_name<S: AsRef<str>>(name: S) -> Dimension {
+        Dimension {
+            name: name.as_ref().to_owned(),
+            source: None,
+        }
+    }
+
+    pub fn with_name_and_source<N: AsRef<str>, S: AsRef<str>>(name: N, source: S) -> Dimension {
+        Dimension {
+            name: name.as_ref().to_owned(),
+            source: Some(source.as_ref().to_owned()),
+        }
+    }
+
+    /// Returns a new `Dimension` with the given name; all other fields will
+    /// be copied over.
+    pub fn renamed<S: AsRef<str>>(&self, name: S) -> Dimension {
+        Dimension {
+            name: name.as_ref().to_owned(),
+            source: self.source.clone(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -22,7 +54,7 @@ pub enum AggregatedMetricType {
 }
 
 /// The final value resulting from aggregating a metric's values.
-pub type AggregatedMetric = (AggregatedMetricType, String, f64);
+pub type AggregatedMetric = (AggregatedMetricType, Dimension, f64);
 
 /// All the metrics in a given time interval coalesced into a single value for
 /// each metric.
@@ -44,9 +76,11 @@ impl AggregatedMetrics {
         }
     }
 
-    pub fn aggregate_counts(&mut self, counts: hash_map::Iter<String, u64>) {
-        for (name, value) in counts {
-            self.metrics.push((AggregatedMetricType::Count, name.to_owned(), *value as f64))
+    pub fn aggregate_counts<'a, I>(&mut self, counts: I)
+        where I: Iterator<Item=(&'a Dimension, &'a u64)>
+    {
+        for (dim, value) in counts {
+            self.metrics.push((AggregatedMetricType::Count, dim.to_owned(), *value as f64))
         }
     }
 
@@ -54,10 +88,12 @@ impl AggregatedMetrics {
     /// average (mean), and 95th percentile summary measures will all be
     /// emitted, as well as a total count of all the individual measures
     /// received in the period.
-    pub fn aggregate_measures(&mut self, measures: hash_map::Iter<String, Vec<f64>>) {
+    pub fn aggregate_measures<'a, I>(&mut self, measures: I)
+        where I: Iterator<Item=(&'a Dimension, &'a Vec<f64>)>
+    {
         use self::AggregatedMetricType::*;
 
-        for (name, values) in measures {
+        for (dim, values) in measures {
             let mut sorted = values.clone();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Equal));
 
@@ -68,20 +104,22 @@ impl AggregatedMetrics {
             let percentile95 = sorted[(sorted.len() as f64 * 0.95) as usize];
             let percentile99 = sorted[(sorted.len() as f64 * 0.99) as usize];
 
-            self.metrics.push((Measure, format!("{}.min",          name), min));
-            self.metrics.push((Measure, format!("{}.max",          name), max));
-            self.metrics.push((Measure, format!("{}.median",       name), median));
-            self.metrics.push((Measure, format!("{}.avg",          name), average));
-            self.metrics.push((Measure, format!("{}.95percentile", name), percentile95));
-            self.metrics.push((Measure, format!("{}.99percentile", name), percentile99));
+            self.metrics.push((Measure, dim.renamed(format!("{}.min",          dim.name)), min));
+            self.metrics.push((Measure, dim.renamed(format!("{}.max",          dim.name)), max));
+            self.metrics.push((Measure, dim.renamed(format!("{}.median",       dim.name)), median));
+            self.metrics.push((Measure, dim.renamed(format!("{}.avg",          dim.name)), average));
+            self.metrics.push((Measure, dim.renamed(format!("{}.95percentile", dim.name)), percentile95));
+            self.metrics.push((Measure, dim.renamed(format!("{}.99percentile", dim.name)), percentile99));
 
-            self.metrics.push((Count,   format!("{}.count", name), sorted.len() as f64));
+            self.metrics.push((Count,   dim.renamed(format!("{}.count", dim.name)), sorted.len() as f64));
         }
     }
 
-    pub fn aggregate_samples(&mut self, samples: hash_map::Iter<String, f64>) {
-        for (name, value) in samples {
-            self.metrics.push((AggregatedMetricType::Sample, name.to_owned(), *value as f64))
+    pub fn aggregate_samples<'a, I>(&mut self, samples: I)
+        where I: Iterator<Item=(&'a Dimension, &'a f64)>
+    {
+        for (dim, value) in samples {
+            self.metrics.push((AggregatedMetricType::Sample, dim.to_owned(), *value as f64))
         }
     }
 

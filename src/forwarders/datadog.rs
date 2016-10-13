@@ -37,7 +37,7 @@ impl DatadogForwarder {
             .map(|metric| {
                 let mut object: BTreeMap<String, Json> = BTreeMap::new();
 
-                let (ref metric_type, ref name, ref value) = *metric;
+                let (ref metric_type, ref dim, ref value) = *metric;
 
                 let api_type = match *metric_type {
                     Count   => "count",
@@ -45,11 +45,17 @@ impl DatadogForwarder {
                     Sample  => "gauge",
                 };
 
-                object.insert("metric".to_owned(), name.to_json());
+                object.insert("metric".to_owned(), dim.name.to_json());
                 object.insert("type".to_owned(), api_type.to_json());
                 object.insert("points".to_owned(), Json::Array(vec![
                     Json::Array(vec![ timestamp.to_json(), value.to_json() ]),
                 ]));
+
+                if let Some(ref source) = dim.source {
+                    object.insert("tags".to_owned(), Json::Array(vec![
+                        format!("source:{}", source).to_json()
+                    ]));
+                }
 
                 object.to_json()
             })
@@ -98,6 +104,7 @@ mod tests {
     use super::super::super::metrics::{
         AggregatedMetrics,
         AggregatedMetricType,
+        Dimension,
     };
 
     use rustc_serialize::json::ToJson;
@@ -105,7 +112,8 @@ mod tests {
     #[test]
     fn datadog_forwarder_serializes_metrics() {
         let metrics = AggregatedMetrics::with_metrics(vec![
-            (AggregatedMetricType::Count, "test_count".to_owned(), 1.0),
+            (AggregatedMetricType::Count, Dimension::with_name("test_count"), 1.0),
+            (AggregatedMetricType::Count, Dimension::with_name_and_source("test_count", "test_source"), 2.0),
         ]);
         let json = DatadogForwarder::serialize_metrics(metrics);
 
@@ -113,11 +121,13 @@ mod tests {
         assert_eq!(series.is_some(), true);
 
         let series = series.unwrap();
-        assert_eq!(series.len(), 1);
+        assert_eq!(series.len(), 2);
 
+        // First item
         let item = series[0].as_object().unwrap();
         assert_eq!(item.get("metric"), Some(&"test_count".to_json()));
-        assert_eq!(item.get("type"),   Some(&"count".to_json()));
+        assert_eq!(item.get("type"), Some(&"count".to_json()));
+        assert!(item.get("tags").is_none());
 
         let points = item.get("points").unwrap().as_array().unwrap();
         assert_eq!(points.len(), 1);
@@ -125,5 +135,16 @@ mod tests {
         assert_eq!(point.len(), 2);
         let ref value = point[1];
         assert_eq!(value, &1.0.to_json());
+
+        // Second item
+        let item = series[1].as_object().unwrap();
+        assert_eq!(item.get("metric"), Some(&"test_count".to_json()));
+        assert_eq!(item.get("type"), Some(&"count".to_json()));
+        assert!(item.get("tags").is_some());
+
+        let tags = item.get("tags").unwrap().as_array().unwrap();
+        assert_eq!(tags.len(), 1);
+        let ref tag = tags[0];
+        assert_eq!(tag, &"source:test_source".to_json());
     }
 }
