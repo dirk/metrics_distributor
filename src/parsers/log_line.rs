@@ -82,6 +82,9 @@ lazy_static! {
     static ref DYNO_TYPE_REGEX: Regex =
         Regex::new(r"dyno=(\w+)").unwrap();
 
+    static ref CONNECT_REGEX: Regex =
+        Regex::new(r"connect=(\d+)ms").unwrap();
+
     static ref SERVICE_REGEX: Regex =
         Regex::new(r"service=(\d+)ms").unwrap();
 
@@ -103,6 +106,13 @@ impl HerokuLogLineReader {
     /// long it took) and the HTTP response status.
     pub fn parse_status(line: &str) -> Option<Vec<Metric>> {
         let mut metrics: Vec<Metric> = vec![];
+
+        let connect = match CONNECT_REGEX.captures(line)
+            .and_then(|c| c.at(1))
+            .and_then(|c| u16::from_str(c).ok()) {
+                Some(c) => c,
+                None => return None,
+            };
 
         let status = match STATUS_REGEX.captures(line)
             .and_then(|c| c.at(1))
@@ -134,6 +144,10 @@ impl HerokuLogLineReader {
             let service_time_name = format!("{}.service_time", base);
             metrics.push(Measure(Dimension::with_name_and_source(service_time_name, dyno_type), service as f64));
         }
+
+        // Track the connect time (how long it took to pick up the request)
+        let connect_time_name = format!("{}.connect_time", base);
+        metrics.push(Measure(Dimension::with_name_and_source(connect_time_name, dyno_type), connect as f64));
 
         // Count the status
         let status_name = format!("{}.status.{}", base, status);
@@ -294,6 +308,7 @@ mod tests {
         assert_eq!(
             reader.read(line),
             vec![
+                Measure(Dimension::with_name_and_source("dyno.web.connect_time", "web"), 0.0),
                 Count(Dimension::with_name_and_source("dyno.web.status.503", "web"), 1),
                 Count(Dimension::with_name("heroku.error.H18"), 1),
             ]
@@ -316,12 +331,13 @@ mod tests {
     #[test]
     fn heroku_reader_reads_service_times() {
         let reader = HerokuLogLineReader;
-        let line = "2016-02-26 21:34:59.370813+00:00 heroku router - - at=info method=PUT path=\"/\" host=www.example.com request_id=XYZ fwd=\"1.2.3.4\" dyno=web.1 connect=0ms service=39ms status=200 bytes=1627\n";
+        let line = "2016-02-26 21:34:59.370813+00:00 heroku router - - at=info method=PUT path=\"/\" host=www.example.com request_id=XYZ fwd=\"1.2.3.4\" dyno=web.1 connect=1ms service=39ms status=200 bytes=1627\n";
 
         assert_eq!(
             reader.read(line),
             vec![
                 Measure(Dimension::with_name_and_source("dyno.web.service_time", "web"), 39.0),
+                Measure(Dimension::with_name_and_source("dyno.web.connect_time", "web"), 1.0),
                 Count(Dimension::with_name_and_source("dyno.web.status.200", "web"), 1),
             ]
         )
