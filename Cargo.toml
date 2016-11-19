@@ -7,14 +7,14 @@ license = "BSD-3-Clause"
 repository = "https://github.com/dirk/metrics_distributor"
 
 [dependencies]
-hyper = "0.9.10"
+hyper = "0.9.12"
 iron = "0.4.0"
 router = "0.4.0"
-regex = "0.1.77"
+regex = "0.1.80"
 lazy_static = "0.1.16"
 nom = "1.2.4"
 chrono = "0.2.25"
-rustc-serialize = "0.3.19"
+rustc-serialize = "0.3.21"
 
 [[example]]
 name = "http_server"
