@@ -42,7 +42,7 @@ The system OpenSSL on macOS is too outdated. To use the one installed by Homebre
 ```sh
 export OPENSSL_INCLUDE_DIR=`brew --prefix openssl`/include
 export OPENSSL_LIB_DIR=`brew --prefix openssl`/lib
-export DEP_OPENSSL_INCLUDE=`brew --prefix openssl`/include
+export LDFLAGS=-L`brew --prefix openssl`/lib
 ```
 
 ### Configuration
