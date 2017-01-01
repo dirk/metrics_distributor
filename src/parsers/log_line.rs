@@ -31,7 +31,8 @@ lazy_static! {
 impl StandardLogLineReader {
     fn parse_source<'a>(line: &'a str) -> Option<&'a str> {
         SOURCE_REGEX.captures(line)
-                    .and_then(|c| c.at(1))
+                    .and_then(|c| c.get(1))
+                    .map(|m| m.as_str())
     }
 }
 
@@ -46,27 +47,27 @@ impl LogLineReader for StandardLogLineReader {
 
         // Look for counts
         for cap in LOG_COUNT_REGEX.captures_iter(line) {
-            let name = cap.at(1).unwrap();
+            let name = cap.get(1).unwrap().as_str();
 
-            if let Ok(value) = u64::from_str(cap.at(2).unwrap()) {
+            if let Ok(value) = u64::from_str(cap.get(2).unwrap().as_str()) {
                 metrics.push(Count(dimension(name), value))
             }
         }
 
         // Look for measures
         for cap in LOG_MEASURE_REGEX.captures_iter(line) {
-            let name = cap.at(1).unwrap();
+            let name = cap.get(1).unwrap().as_str();
 
-            if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
+            if let Ok(value) = f64::from_str(cap.get(2).unwrap().as_str()) {
                 metrics.push(Measure(dimension(name), value))
             }
         }
 
         // Look for samples
         for cap in LOG_SAMPLE_REGEX.captures_iter(line) {
-            let name = cap.at(1).unwrap();
+            let name = cap.get(1).unwrap().as_str();
 
-            if let Ok(value) = f64::from_str(cap.at(2).unwrap()) {
+            if let Ok(value) = f64::from_str(cap.get(2).unwrap().as_str()) {
                 metrics.push(Sample(dimension(name), value))
             }
         }
@@ -108,28 +109,32 @@ impl HerokuLogLineReader {
         let mut metrics: Vec<Metric> = vec![];
 
         let connect = match CONNECT_REGEX.captures(line)
-            .and_then(|c| c.at(1))
+            .and_then(|c| c.get(1))
+            .map(|m| m.as_str())
             .and_then(|c| u16::from_str(c).ok()) {
                 Some(c) => c,
                 None => return None,
             };
 
         let status = match STATUS_REGEX.captures(line)
-            .and_then(|c| c.at(1))
+            .and_then(|c| c.get(1))
+            .map(|m| m.as_str())
             .and_then(|s| u16::from_str(s).ok()) {
                 Some(s) => s,
                 None => return None,
             };
 
         let service = match SERVICE_REGEX.captures(line)
-            .and_then(|c| c.at(1))
+            .and_then(|c| c.get(1))
+            .map(|m| m.as_str())
             .and_then(|s| u32::from_str(s).ok()) {
                 Some(s) => s,
                 None => return None,
             };
 
         let dyno_type = match DYNO_TYPE_REGEX.captures(line)
-            .and_then(|c| c.at(1)) {
+            .and_then(|c| c.get(1))
+            .map(|m| m.as_str()) {
                 Some(d) => d,
                 None => return None,
             };
@@ -163,10 +168,10 @@ impl HerokuLogLineReader {
     pub fn parse_heroku_code(line: &str) -> Option<Metric> {
         let code: &str;
 
-        if let Some(http_code) = HEROKU_HTTP_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1)) {
+        if let Some(http_code) = HEROKU_HTTP_ERROR_CODE_REGEX.captures(line).and_then(|c| c.get(1)).map(|m| m.as_str()) {
             code = http_code;
 
-        } else if let Some(runtime_code) = HEROKU_RUNTIME_ERROR_CODE_REGEX.captures(line).and_then(|c| c.at(1)) {
+        } else if let Some(runtime_code) = HEROKU_RUNTIME_ERROR_CODE_REGEX.captures(line).and_then(|c| c.get(1)).map(|m| m.as_str()) {
             code = runtime_code;
 
         } else {
@@ -180,7 +185,8 @@ impl HerokuLogLineReader {
     /// Parses the `sample#load_avg_1m=` metrics from Heroku logs.
     pub fn parse_load(line: &str) -> Option<Metric> {
         let load_avg_1m = match LOAD_AVG_1M_REGEX.captures(line)
-                                                 .and_then(|c| c.at(1))
+                                                 .and_then(|c| c.get(1))
+                                                 .map(|m| m.as_str())
                                                  .and_then(|c| f64::from_str(c).ok()) {
             Some(l) => l,
             None => return None,
