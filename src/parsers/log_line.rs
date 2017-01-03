@@ -16,16 +16,16 @@ pub struct StandardLogLineReader;
 
 lazy_static! {
     static ref LOG_MEASURE_REGEX: Regex =
-        Regex::new(r"measure#([a-zA-Z0-9._]+)=(\d+(?:\.\d+)?)").unwrap();
+        Regex::new(r"measure#([[:alnum:]._]+)=(\d+(?:\.\d+)?)").unwrap();
 
     static ref LOG_SAMPLE_REGEX: Regex =
-        Regex::new(r"sample#([a-zA-Z0-9._]+)=(\d+(?:\.\d+)?)").unwrap();
+        Regex::new(r"sample#([[:alnum:]._]+)=(\d+(?:\.\d+)?)").unwrap();
 
     static ref LOG_COUNT_REGEX: Regex =
-        Regex::new(r"count#([a-zA-Z0-9._]+)=(\d+)").unwrap();
+        Regex::new(r"count#([[:alnum:]._]+)=(\d+)").unwrap();
 
     static ref SOURCE_REGEX: Regex =
-        Regex::new(r"source=([\w.]+)").unwrap();
+        Regex::new(r"source=([[:alnum:]._]+)").unwrap();
 }
 
 impl StandardLogLineReader {
@@ -81,7 +81,7 @@ pub struct HerokuLogLineReader;
 
 lazy_static! {
     static ref DYNO_TYPE_REGEX: Regex =
-        Regex::new(r"dyno=(\w+)").unwrap();
+        Regex::new(r"dyno=([[:alpha:]]+)").unwrap();
 
     static ref CONNECT_REGEX: Regex =
         Regex::new(r"connect=(\d+)ms").unwrap();
