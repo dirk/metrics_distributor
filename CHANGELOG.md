@@ -1,3 +1,10 @@
+# 0.4.1
+
+* fc89fb5: Update `nom` dependency.
+* 211e48e: Update `regex` dependency from v0.1.x to v0.2.x.
+* 3335a4c: Update `nom` and `regex` dependencies.
+* aa38d31: Use Perl-style character classes in regexes.
+
 # 0.4.0
 
 * f5f7c70: Change metrics from simple names to dimensions (combination of name and source).
