@@ -7,9 +7,9 @@ license = "BSD-3-Clause"
 repository = "https://github.com/dirk/metrics_distributor"
 
 [dependencies]
-hyper = "0.9.12"
-iron = "0.4.0"
-router = "0.4.0"
+hyper = "0.10.4"
+iron = "0.5.1"
+router = "0.5.1"
 regex = "0.2.1"
 lazy_static = "0.1.16"
 nom = "2.0.1"
