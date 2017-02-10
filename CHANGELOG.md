@@ -1,3 +1,7 @@
+# 0.5.1
+
+* 405644e6: Use `reqwest` library to restore support for HTTPS client requests used by `DatadogForwarder`.
+
 # 0.5.0
 
 * e7932ae: Update `hyper`, `iron`, and `router` web framework crates. This is the reason for the minor version bump: these crates significantly changed their approach to TLS/SSL support.
