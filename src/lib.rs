@@ -6,6 +6,7 @@ extern crate nom;
 extern crate chrono;
 extern crate hyper;
 extern crate iron;
+extern crate reqwest;
 extern crate regex;
 extern crate rustc_serialize;
 
