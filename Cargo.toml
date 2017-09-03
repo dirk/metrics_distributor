@@ -7,7 +7,7 @@ license = "BSD-3-Clause"
 repository = "https://github.com/dirk/metrics_distributor"
 
 [dependencies]
-hyper = "0.10.4"
+hyper = "0.10.13"
 iron = "0.5.1"
 router = "0.5.1"
 reqwest = "0.4.0"
