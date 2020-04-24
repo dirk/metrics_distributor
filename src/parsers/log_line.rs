@@ -5,7 +5,7 @@ use super::super::metrics::*;
 
 /// Reader that takes a log line string and returns any metrics found in it.
 pub trait LogLineReader: Send + Sync {
-    fn read(&self, &str) -> Vec<Metric>;
+    fn read(&self, line: &str) -> Vec<Metric>;
 }
 
 /// Reads metrics from log lines in the standard formats:
@@ -29,7 +29,7 @@ lazy_static! {
 }
 
 impl StandardLogLineReader {
-    fn parse_source<'a>(line: &'a str) -> Option<&'a str> {
+    fn parse_source(line: &str) -> Option<&str> {
         SOURCE_REGEX.captures(line)
                     .and_then(|c| c.get(1))
                     .map(|m| m.as_str())
