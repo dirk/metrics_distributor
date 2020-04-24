@@ -1,8 +1,8 @@
 //! Reports metrics to Datadog through their HTTPS API.
 
 use chrono::UTC;
-use hyper::header::ContentType;
-use reqwest::{Client, RequestBuilder};
+use hyper::header::CONTENT_TYPE;
+use reqwest::blocking::{Client, RequestBuilder};
 use rustc_serialize::json::{self, Json, ToJson};
 use std::collections::BTreeMap;
 
@@ -72,14 +72,14 @@ impl DatadogForwarder {
         let path = format!("{}{}?api_key={}", self.base_url, path, self.api_key);
 
         client.post(&path)
-            .header(ContentType::json())
+            .header(CONTENT_TYPE, "application/json")
     }
 }
 
 impl Forwarder for DatadogForwarder {
     fn forward_metrics(&self, metrics: AggregatedMetrics) {
         let body = json::encode(&DatadogForwarder::serialize_metrics(metrics)).unwrap();
-        let client = Client::new().unwrap();
+        let client = Client::new();
 
         let res = self.post(&client, "/v1/series")
             .body(body)
