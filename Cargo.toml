@@ -3,8 +3,10 @@ name = "metrics_distributor"
 version = "0.5.2"
 authors = ["Dirk Gadsden <dirk@esherido.com>"]
 description = "Ingest logs and forward aggregated data to APIs/services."
-license = "BSD-3-Clause"
+documentation = "https://docs.rs/metrics_distributor"
+readme = "README.md"
 repository = "https://github.com/dirk/metrics_distributor"
+license = "BSD-3-Clause"
 
 [dependencies]
 hyper = "0.13.4"
@@ -12,7 +14,7 @@ iron = "0.6.1"
 router = "0.6.0"
 reqwest = { version = "0.10.4", features = ["blocking"] }
 regex = "0.2.1"
-lazy_static = "0.1.16"
+lazy_static = "1.1.0"
 nom = "2.2.1"
 chrono = "0.3.0"
 rustc-serialize = "0.3.21"
@@ -22,3 +24,6 @@ name = "http_server"
 
 [[example]]
 name = "statsd_server"
+
+[badges]
+travis-ci = { repository = "dirk/metrics_distributor" }

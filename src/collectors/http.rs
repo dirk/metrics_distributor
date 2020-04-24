@@ -12,16 +12,16 @@ use super::super::parsers::log_line::LogLineReader;
 /// will be recorded in the `store`.
 pub struct LogDrainHandler {
     store: SharedStore,
-    readers: Vec<Box<LogLineReader>>,
+    readers: Vec<Box<dyn LogLineReader>>,
 }
 
 impl LogDrainHandler {
     /// Create a new handler with the given vector of readers. Each reader
     /// will be called on every line the handler receives.
-    pub fn new(store: SharedStore, readers: Vec<Box<LogLineReader>>) -> LogDrainHandler {
+    pub fn new(store: SharedStore, readers: Vec<Box<dyn LogLineReader>>) -> LogDrainHandler {
         LogDrainHandler {
-            store: store,
-            readers: readers,
+            store,
+            readers,
         }
     }
 }
@@ -48,6 +48,6 @@ impl Handler for LogDrainHandler {
 
         self.store.record(metrics);
 
-        Ok(Response::with((Status::Created)))
+        Ok(Response::with(Status::Created))
     }
 }

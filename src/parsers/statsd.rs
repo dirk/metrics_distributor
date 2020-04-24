@@ -80,30 +80,27 @@ pub fn parse_metrics(i: &[u8]) -> Result<Vec<ParsedMetric>, ParseError> {
 }
 
 pub fn parse_counter(i: &[u8]) -> ParseResult {
-    chain!(i,
-        name: parse_metric_name ~ tag!(":")  ~
-        value: parse_value      ~ tag!("|c") ~
-        _sample_rate: opt!(complete!(parse_sample_rate)) ,
-
-        ||{ ParsedMetric::Counter(name, value) }
+    do_parse!(i,
+        name: parse_metric_name >> tag!(":")  >>
+        value: parse_value      >> tag!("|c") >>
+        _sample_rate: opt!(complete!(parse_sample_rate)) >>
+        (ParsedMetric::Counter(name, value))
     )
 }
 
 pub fn parse_gauge(i: &[u8]) -> ParseResult {
-    chain!(i,
-        name: parse_metric_name ~ tag!(":")  ~
-        value: parse_value      ~ tag!("|g") ,
-
-        ||{ ParsedMetric::Gauge(name, value) }
+    do_parse!(i,
+        name: parse_metric_name >> tag!(":")  >>
+        value: parse_value      >> tag!("|g") >>
+        (ParsedMetric::Gauge(name, value))
     )
 }
 
 pub fn parse_timer(i: &[u8]) -> ParseResult {
-    chain!(i,
-        name: parse_metric_name ~ tag!(":")  ~
-        value: parse_value      ~ tag!("|ms") ,
-
-        ||{ ParsedMetric::Timer(name, value) }
+    do_parse!(i,
+        name: parse_metric_name >> tag!(":")  >>
+        value: parse_value      >> tag!("|ms") >>
+        (ParsedMetric::Timer(name, value))
     )
 }
 

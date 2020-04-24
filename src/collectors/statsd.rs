@@ -133,7 +133,7 @@ impl StatsdUdpListener {
 } // impl StatsdUdpListener
 
 fn handle_line(store: &SharedStore, line: String) {
-    let line_trimmed = line.trim_right();
+    let line_trimmed = line.trim_end();
     let result = parse_metrics(line_trimmed.as_bytes());
 
     match result {
@@ -157,8 +157,10 @@ mod tests {
     fn handle_line_parses_metrics() {
         let store = SharedStore::new();
         handle_line(&store, "foo:1|g".to_owned());
+        handle_line(&store, "bar:2|c \t\n".to_owned());
 
         assert_eq!(store.flush(), AggregatedMetrics::with_metrics(vec![
+            (AggregatedMetricType::Count, Dimension::with_name("bar"), 2.0),
             (AggregatedMetricType::Sample, Dimension::with_name("foo"), 1.0),
         ]));
     }
